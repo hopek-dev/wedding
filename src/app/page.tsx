@@ -40,13 +40,14 @@ export default async function DashboardPage() {
   const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps);
   const totalEstimated = budgetItems.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
   const totalPaid = budgetItems.reduce((sum, i) => sum + Number(i.amount_paid), 0);
-  const paidPct = totalEstimated > 0 ? Math.min(100, (totalPaid / totalEstimated) * 100) : 0;
 
   const openTaskCount = tasks.filter((t) => t.status !== "done").length;
   const overdueTaskCount = tasks.filter((t) => taskVisualStatus(t) === "overdue").length;
 
   const budgetByCategory = categoryTotals(budgetItems, guestCounts);
   const variance = totalVariance(budgetItems, guestCounts);
+  const amountOwed = Math.max(variance.actual - totalPaid, 0);
+  const paidPct = variance.actual > 0 ? Math.min(100, (totalPaid / variance.actual) * 100) : 0;
 
   return (
     <div className="grid gap-8">
@@ -155,7 +156,10 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <Progress value={paidPct} />
-                <div className="mt-1 text-xs text-muted-foreground">{Math.round(paidPct)}% of estimate paid</div>
+                <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                  <span>{Math.round(paidPct)}% of actual paid</span>
+                  {amountOwed > 0 && <span>{formatGBP(amountOwed)} owed</span>}
+                </div>
               </div>
             </CardContent>
           </Card>
