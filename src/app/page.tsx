@@ -124,27 +124,39 @@ export default async function DashboardPage() {
               <CardTitle>Budget</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
-              <div className="flex items-baseline justify-between">
-                <div className="text-2xl font-semibold">{formatGBP(totalPaid)}</div>
-                <div className="text-sm text-muted-foreground">of {formatGBP(totalEstimated)} estimated</div>
-              </div>
-              <Progress value={paidPct} />
-              {variance.variance !== 0 && (
-                <div
-                  className={cn(
-                    "flex items-center gap-1 text-xs font-medium",
-                    variance.variance > 0 ? "text-status-critical" : "text-status-good"
-                  )}
-                >
-                  {variance.variance > 0 ? (
-                    <TrendingUp className="size-3.5" />
-                  ) : (
-                    <TrendingDown className="size-3.5" />
-                  )}
-                  {formatGBP(Math.abs(variance.variance))}{" "}
-                  {variance.variance > 0 ? "over estimate (actual)" : "under estimate (actual)"}
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <div className="text-xs text-muted-foreground">Estimated</div>
+                  <div className="text-lg font-semibold">{formatGBP(totalEstimated)}</div>
                 </div>
-              )}
+                <div>
+                  <div className="text-xs text-muted-foreground">Actual</div>
+                  <div className="text-lg font-semibold">{formatGBP(variance.actual)}</div>
+                  {variance.variance !== 0 && (
+                    <div
+                      className={cn(
+                        "flex items-center gap-0.5 text-[11px] font-medium",
+                        variance.variance > 0 ? "text-status-critical" : "text-status-good"
+                      )}
+                    >
+                      {variance.variance > 0 ? (
+                        <TrendingUp className="size-3" />
+                      ) : (
+                        <TrendingDown className="size-3" />
+                      )}
+                      {formatGBP(Math.abs(variance.variance))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Paid</div>
+                  <div className="text-lg font-semibold">{formatGBP(totalPaid)}</div>
+                </div>
+              </div>
+              <div>
+                <Progress value={paidPct} />
+                <div className="mt-1 text-xs text-muted-foreground">{Math.round(paidPct)}% of estimate paid</div>
+              </div>
             </CardContent>
           </Card>
         </Link>
