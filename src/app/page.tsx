@@ -1,69 +1,131 @@
-import Image from "next/image";
+import Link from "next/link";
+import { listEvents } from "@/app/actions/events";
+import { listGuestsWithRsvps } from "@/app/actions/guests";
+import { listBudgetItems } from "@/app/actions/budget";
+import { listTasks } from "@/app/actions/tasks";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { formatDateTime, formatGBP } from "@/lib/format";
+import { taskVisualStatus } from "@/lib/gantt";
+import { Landmark, UtensilsCrossed, Ship, MapPin } from "lucide-react";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+const eventIcons: Record<string, typeof Landmark> = {
+  ceremony: Landmark,
+  reception: UtensilsCrossed,
+  boat_party: Ship,
+};
+
+export default async function DashboardPage() {
+  const [events, { guests, rsvps }, budgetItems, tasks] = await Promise.all([
+    listEvents(),
+    listGuestsWithRsvps(),
+    listBudgetItems(),
+    listTasks(),
+  ]);
+
+  const ceremony = events.find((e) => e.event_key === "ceremony");
+  const daysToGo = ceremony?.starts_at
+    ? Math.ceil((new Date(ceremony.starts_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const confirmedCount = rsvps.filter((r) => r.status === "confirmed").length;
+  const invitedCount = rsvps.filter((r) => r.status === "invited").length;
+  const declinedCount = rsvps.filter((r) => r.status === "declined").length;
+
+  const totalEstimated = budgetItems.reduce((sum, i) => sum + Number(i.estimated_cost), 0);
+  const totalPaid = budgetItems.reduce((sum, i) => sum + Number(i.amount_paid), 0);
+  const paidPct = totalEstimated > 0 ? Math.min(100, (totalPaid / totalEstimated) * 100) : 0;
+
+  const openTaskCount = tasks.filter((t) => t.status !== "done").length;
+  const overdueTaskCount = tasks.filter((t) => taskVisualStatus(t) === "overdue").length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="grid gap-8">
+      <div>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          {daysToGo != null && daysToGo >= 0
+            ? `${daysToGo} day${daysToGo === 1 ? "" : "s"} to go`
+            : "Planning the big day"}
+        </h1>
+        <p className="mt-1 text-muted-foreground">
+          Town hall ceremony, restaurant reception, and a boat party — here&apos;s where things stand.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {events.map((event) => {
+          const Icon = eventIcons[event.event_key] ?? MapPin;
+          return (
+            <Link key={event.id} href="/events">
+              <Card className="h-full transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary/40 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_28px_-10px_rgba(0,0,0,0.16)] active:translate-y-0 active:scale-[0.98]">
+                <CardHeader className="flex flex-row items-center gap-2 pb-2">
+                  <Icon className="size-4 text-primary" />
+                  <CardTitle className="text-sm font-medium">{event.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="font-medium">{event.venue_name || "Venue TBD"}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {formatDateTime(event.starts_at)}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Link href="/tasks">
+          <Card className="h-full transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary/40 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_28px_-10px_rgba(0,0,0,0.16)] active:translate-y-0 active:scale-[0.98]">
+            <CardHeader>
+              <CardTitle>Tasks</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <div className="text-2xl font-semibold">{openTaskCount} open</div>
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                {overdueTaskCount > 0 ? (
+                  <span className="text-status-critical">{overdueTaskCount} overdue</span>
+                ) : (
+                  <span>Nothing overdue</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/guests">
+          <Card className="h-full transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary/40 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_28px_-10px_rgba(0,0,0,0.16)] active:translate-y-0 active:scale-[0.98]">
+            <CardHeader>
+              <CardTitle>Guests</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <div className="text-2xl font-semibold">{guests.length} on the list</div>
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span className="text-emerald-600 dark:text-emerald-400">{confirmedCount} confirmed</span>
+                <span className="text-amber-600 dark:text-amber-400">{invitedCount} invited</span>
+                <span className="text-red-600 dark:text-red-400">{declinedCount} declined</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/budget">
+          <Card className="h-full transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary/40 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_28px_-10px_rgba(0,0,0,0.16)] active:translate-y-0 active:scale-[0.98]">
+            <CardHeader>
+              <CardTitle>Budget</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <div className="flex items-baseline justify-between">
+                <div className="text-2xl font-semibold">{formatGBP(totalPaid)}</div>
+                <div className="text-sm text-muted-foreground">of {formatGBP(totalEstimated)} estimated</div>
+              </div>
+              <Progress value={paidPct} />
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
     </div>
   );
 }
