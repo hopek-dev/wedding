@@ -36,12 +36,12 @@ export function CategoryBarChart({ data }: { data: CategoryTotal[] }) {
   if (data.length === 0) {
     return (
       <div className="rounded-lg border bg-card py-12 text-center text-sm text-muted-foreground">
-        Add an expense to see estimated vs. actual spend by category.
+        Add an expense to see estimated, actual, and paid spend by category.
       </div>
     );
   }
 
-  const max = Math.max(...data.flatMap((d) => [d.estimated, d.actual]), 1);
+  const max = Math.max(...data.flatMap((d) => [d.estimated, d.actual, d.paid]), 1);
 
   return (
     <div className="grid gap-3">
@@ -71,6 +71,13 @@ export function CategoryBarChart({ data }: { data: CategoryTotal[] }) {
                   seriesLabel="actual"
                   categoryLabel={d.category}
                 />
+                <BarRow
+                  value={d.paid}
+                  max={max}
+                  colorVar="--chart-paid"
+                  seriesLabel="paid"
+                  categoryLabel={d.category}
+                />
               </div>
             </div>
           ))}
@@ -84,6 +91,10 @@ export function CategoryBarChart({ data }: { data: CategoryTotal[] }) {
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2.5 rounded-[2px] bg-chart-actual" />
           Actual
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2.5 rounded-[2px] bg-chart-paid" />
+          Paid
         </span>
       </div>
     </div>

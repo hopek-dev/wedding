@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatDateTime, formatGBP } from "@/lib/format";
 import { taskVisualStatus } from "@/lib/gantt";
-import { categoryTotals, guestCountsByEvent, resolvedEstimatedCost } from "@/lib/budget";
+import { categoryTotals, guestCountsByEvent, resolvedEstimatedCost, totalVariance } from "@/lib/budget";
 import { CategoryBarChart } from "@/components/budget/category-bar-chart";
-import { Landmark, UtensilsCrossed, Ship, MapPin } from "lucide-react";
+import { Landmark, UtensilsCrossed, Ship, MapPin, TrendingUp, TrendingDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function DashboardPage() {
   const overdueTaskCount = tasks.filter((t) => taskVisualStatus(t) === "overdue").length;
 
   const budgetByCategory = categoryTotals(budgetItems, guestCounts);
+  const variance = totalVariance(budgetItems, guestCounts);
 
   return (
     <div className="grid gap-8">
@@ -127,6 +129,22 @@ export default async function DashboardPage() {
                 <div className="text-sm text-muted-foreground">of {formatGBP(totalEstimated)} estimated</div>
               </div>
               <Progress value={paidPct} />
+              {variance.variance !== 0 && (
+                <div
+                  className={cn(
+                    "flex items-center gap-1 text-xs font-medium",
+                    variance.variance > 0 ? "text-status-critical" : "text-status-good"
+                  )}
+                >
+                  {variance.variance > 0 ? (
+                    <TrendingUp className="size-3.5" />
+                  ) : (
+                    <TrendingDown className="size-3.5" />
+                  )}
+                  {formatGBP(Math.abs(variance.variance))}{" "}
+                  {variance.variance > 0 ? "over estimate (actual)" : "under estimate (actual)"}
+                </div>
+              )}
             </CardContent>
           </Card>
         </Link>
@@ -134,7 +152,7 @@ export default async function DashboardPage() {
 
       <div>
         <h2 className="font-heading text-xl font-semibold tracking-tight">Budget by category</h2>
-        <p className="mt-1 mb-4 text-sm text-muted-foreground">Estimated vs. actual spend for each category.</p>
+        <p className="mt-1 mb-4 text-sm text-muted-foreground">Estimated, actual, and paid spend for each category.</p>
         <CategoryBarChart data={budgetByCategory} />
       </div>
     </div>

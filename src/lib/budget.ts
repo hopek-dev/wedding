@@ -51,23 +51,40 @@ export interface CategoryTotal {
   category: string;
   estimated: number;
   actual: number;
+  paid: number;
 }
 
-// Estimated vs actual spend per category, for the dashboard chart. "Actual"
-// falls back to the live estimate when no actual cost has been entered yet,
-// matching the same fallback used in the budget page's running totals.
+// Estimated vs actual vs paid spend per category, for the dashboard chart.
+// "Actual" falls back to the live estimate when no actual cost has been
+// entered yet, matching the same fallback used in the budget page's running
+// totals.
 export function categoryTotals(items: BudgetItem[], guestCounts: Record<string, number>): CategoryTotal[] {
   const byCategory = new Map<string, CategoryTotal>();
   for (const item of items) {
     const estimated = resolvedEstimatedCost(item, guestCounts);
     const actual = Number(item.actual_cost ?? estimated);
+    const paid = Number(item.amount_paid);
     const existing = byCategory.get(item.category);
     if (existing) {
       existing.estimated += estimated;
       existing.actual += actual;
+      existing.paid += paid;
     } else {
-      byCategory.set(item.category, { category: item.category, estimated, actual });
+      byCategory.set(item.category, { category: item.category, estimated, actual, paid });
     }
   }
   return Array.from(byCategory.values()).sort((a, b) => b.estimated - a.estimated);
+}
+
+export interface BudgetVariance {
+  estimated: number;
+  actual: number;
+  variance: number;
+}
+
+// Positive variance = over the estimate; negative = under it.
+export function totalVariance(items: BudgetItem[], guestCounts: Record<string, number>): BudgetVariance {
+  const estimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
+  const actual = items.reduce((sum, i) => sum + Number(i.actual_cost ?? resolvedEstimatedCost(i, guestCounts)), 0);
+  return { estimated, actual, variance: actual - estimated };
 }
