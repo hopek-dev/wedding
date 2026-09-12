@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatDateTime, formatGBP } from "@/lib/format";
 import { taskVisualStatus } from "@/lib/gantt";
-import { guestCountsByEvent, resolvedEstimatedCost } from "@/lib/budget";
+import { categoryTotals, guestCountsByEvent, resolvedEstimatedCost } from "@/lib/budget";
+import { CategoryBarChart } from "@/components/budget/category-bar-chart";
 import { Landmark, UtensilsCrossed, Ship, MapPin } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +43,8 @@ export default async function DashboardPage() {
 
   const openTaskCount = tasks.filter((t) => t.status !== "done").length;
   const overdueTaskCount = tasks.filter((t) => taskVisualStatus(t) === "overdue").length;
+
+  const budgetByCategory = categoryTotals(budgetItems, guestCounts);
 
   return (
     <div className="grid gap-8">
@@ -127,6 +130,12 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </Link>
+      </div>
+
+      <div>
+        <h2 className="font-heading text-xl font-semibold tracking-tight">Budget by category</h2>
+        <p className="mt-1 mb-4 text-sm text-muted-foreground">Estimated vs. actual spend for each category.</p>
+        <CategoryBarChart data={budgetByCategory} />
       </div>
     </div>
   );

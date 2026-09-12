@@ -120,7 +120,7 @@ export function GanttChart({ tasks, events }: { tasks: Task[]; events: WeddingEv
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         {(["todo", "in_progress", "done", "overdue"] as const).map((status) => (
           <span key={status} className="inline-flex items-center gap-1.5">
-            <span className={cn("size-2.5 rounded-sm", statusStyle[status])} />
+            <span className={cn("size-2.5 rounded-[2px]", statusStyle[status])} />
             {statusLabel[status]}
           </span>
         ))}

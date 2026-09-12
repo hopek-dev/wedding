@@ -35,6 +35,11 @@ export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Gu
   // A guest can't be their own plus-one, and (to avoid chains) can't be
   // linked to a guest who is themselves already a plus-one of someone else.
   const plusOneOptions = guests.filter((g) => g.id !== guest?.id && !g.plus_one_of);
+  const plusOneLabel = (v: string) => {
+    if (v === "none") return "Not a plus-one";
+    const linked = guests.find((g) => g.id === v);
+    return linked ? guestFullName(linked) : "";
+  };
 
   async function handleSubmit(formData: FormData) {
     setSaving(true);
@@ -110,7 +115,7 @@ export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Gu
             <Label htmlFor="plus_one_of">Plus one of</Label>
             <Select name="plus_one_of" defaultValue={guest?.plus_one_of ?? "none"}>
               <SelectTrigger id="plus_one_of" className="w-full">
-                <SelectValue />
+                <SelectValue>{(v: string) => plusOneLabel(v)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Not a plus-one</SelectItem>

@@ -115,7 +115,9 @@ export function TaskFormDialog({
               <Label htmlFor="event_id">Linked event</Label>
               <Select name="event_id" defaultValue={task?.event_id ?? "none"}>
                 <SelectTrigger id="event_id" className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v: string) => (v === "none" ? "None" : (events.find((e) => e.id === v)?.name ?? ""))}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
@@ -143,7 +145,11 @@ export function TaskFormDialog({
               <Label htmlFor="status">Status</Label>
               <Select name="status" defaultValue={task?.status ?? "todo"}>
                 <SelectTrigger id="status" className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v: Task["status"]) =>
+                      ({ todo: "Not started", in_progress: "In progress", done: "Done" })[v]
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todo">Not started</SelectItem>
@@ -156,7 +162,9 @@ export function TaskFormDialog({
               <Label htmlFor="priority">Priority</Label>
               <Select name="priority" defaultValue={task?.priority ?? "medium"}>
                 <SelectTrigger id="priority" className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v: Task["priority"]) => ({ low: "Low", medium: "Medium", high: "High" })[v]}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>

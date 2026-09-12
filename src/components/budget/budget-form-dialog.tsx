@@ -29,10 +29,12 @@ import { Pencil, Plus } from "lucide-react";
 
 export function BudgetFormDialog({
   events,
+  categories,
   guestCounts,
   item,
 }: {
   events: WeddingEvent[];
+  categories: string[];
   guestCounts: Record<string, number>;
   item?: BudgetItem;
 }) {
@@ -42,18 +44,23 @@ export function BudgetFormDialog({
   const [costType, setCostType] = useState<BudgetCostType>(item?.cost_type ?? "flat");
   const [eventId, setEventId] = useState(item?.event_id ?? "none");
   const [perGuestCost, setPerGuestCost] = useState(item?.per_guest_cost?.toString() ?? "");
+  const [category, setCategory] = useState(item?.category ?? "");
+  const [isNewCategory, setIsNewCategory] = useState(false);
   const isEdit = !!item;
 
   const isPerGuest = costType === "per_guest";
   const guestCount = eventId !== "none" ? (guestCounts[eventId] ?? 0) : null;
   const eventName = events.find((e) => e.id === eventId)?.name;
+  const eventLabel = (v: string) => (v === "none" ? "General / not event-specific" : (events.find((e) => e.id === v)?.name ?? ""));
+  const costTypeLabel = (v: BudgetCostType) => (v === "per_guest" ? "Per guest attending the event" : "Flat amount");
+  const statusLabelMap: Record<BudgetItem["status"], string> = { planned: "Planned", booked: "Booked", paid: "Paid" };
 
   async function handleSubmit(formData: FormData) {
     setSaving(true);
     try {
       const perGuestCostNum = Number(perGuestCost) || 0;
       const input = {
-        category: formData.get("category") as string,
+        category,
         vendor_name: (formData.get("vendor_name") as string) || undefined,
         event_id: eventId === "none" ? null : eventId,
         cost_type: costType,
@@ -105,13 +112,53 @@ export function BudgetFormDialog({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                name="category"
-                placeholder="Catering, attire, flowers..."
-                defaultValue={item?.category}
-                required
-              />
+              {isNewCategory ? (
+                <div className="flex gap-2">
+                  <Input
+                    id="category"
+                    autoFocus
+                    placeholder="e.g. Catering"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsNewCategory(false);
+                      setCategory(item?.category ?? categories[0] ?? "");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  value={category}
+                  onValueChange={(v) => {
+                    if (v === "__new__") {
+                      setIsNewCategory(true);
+                      setCategory("");
+                    } else if (v) {
+                      setCategory(v);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="category" className="w-full">
+                    <SelectValue>{category || "Select a category"}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__new__">+ Add new category</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="vendor_name">Vendor</Label>
@@ -122,7 +169,7 @@ export function BudgetFormDialog({
             <Label htmlFor="event_id">Linked event</Label>
             <Select value={eventId} onValueChange={(v) => v && setEventId(v)}>
               <SelectTrigger id="event_id" className="w-full">
-                <SelectValue />
+                <SelectValue>{eventLabel(eventId)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">General / not event-specific</SelectItem>
@@ -139,7 +186,7 @@ export function BudgetFormDialog({
             <Label htmlFor="cost_type">How is this priced?</Label>
             <Select value={costType} onValueChange={(v) => v && setCostType(v as BudgetCostType)}>
               <SelectTrigger id="cost_type" className="w-full">
-                <SelectValue />
+                <SelectValue>{costTypeLabel(costType)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="flat">Flat amount</SelectItem>
@@ -220,7 +267,7 @@ export function BudgetFormDialog({
               <Label htmlFor="status">Status</Label>
               <Select name="status" defaultValue={item?.status ?? "planned"}>
                 <SelectTrigger id="status" className="w-full">
-                  <SelectValue />
+                  <SelectValue>{(v: BudgetItem["status"]) => statusLabelMap[v]}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="planned">Planned</SelectItem>

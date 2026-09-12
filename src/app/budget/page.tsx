@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { BudgetFormDialog } from "@/components/budget/budget-form-dialog";
 import { DeleteBudgetButton } from "@/components/budget/delete-budget-button";
 import { formatGBP, formatDate } from "@/lib/format";
-import { guestCountsByEvent, resolvedEstimatedCost } from "@/lib/budget";
+import { budgetCategoryOptions, guestCountsByEvent, resolvedEstimatedCost } from "@/lib/budget";
 import type { BudgetItem } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +33,7 @@ export default async function BudgetPage() {
   ]);
   const eventNameById = new Map(events.map((e) => [e.id, e.name]));
   const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps);
+  const categories = budgetCategoryOptions(items);
 
   const totalEstimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
   const totalActual = items.reduce(
@@ -50,7 +51,7 @@ export default async function BudgetPage() {
             {items.length} expense{items.length === 1 ? "" : "s"} tracked.
           </p>
         </div>
-        <BudgetFormDialog events={events} guestCounts={guestCounts} />
+        <BudgetFormDialog events={events} categories={categories} guestCounts={guestCounts}/>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -118,7 +119,7 @@ export default async function BudgetPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <BudgetFormDialog events={events} guestCounts={guestCounts} item={item} />
+                      <BudgetFormDialog events={events} categories={categories} guestCounts={guestCounts} item={item} />
                       <DeleteBudgetButton itemId={item.id} category={item.category} />
                     </div>
                   </TableCell>
