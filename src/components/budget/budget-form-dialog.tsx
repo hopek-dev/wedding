@@ -23,30 +23,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createBudgetItem, updateBudgetItem } from "@/app/actions/budget";
-import type { BudgetItem, WeddingEvent } from "@/lib/supabase/types";
+import { formatGBP } from "@/lib/format";
+import type { BudgetCostType, BudgetItem, WeddingEvent } from "@/lib/supabase/types";
 import { Pencil, Plus } from "lucide-react";
 
 export function BudgetFormDialog({
   events,
+  guestCounts,
   item,
 }: {
   events: WeddingEvent[];
+  guestCounts: Record<string, number>;
   item?: BudgetItem;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [costType, setCostType] = useState<BudgetCostType>(item?.cost_type ?? "flat");
+  const [eventId, setEventId] = useState(item?.event_id ?? "none");
+  const [perGuestCost, setPerGuestCost] = useState(item?.per_guest_cost?.toString() ?? "");
   const isEdit = !!item;
+
+  const isPerGuest = costType === "per_guest";
+  const guestCount = eventId !== "none" ? (guestCounts[eventId] ?? 0) : null;
+  const eventName = events.find((e) => e.id === eventId)?.name;
 
   async function handleSubmit(formData: FormData) {
     setSaving(true);
     try {
-      const eventId = formData.get("event_id") as string;
+      const perGuestCostNum = Number(perGuestCost) || 0;
       const input = {
         category: formData.get("category") as string,
         vendor_name: (formData.get("vendor_name") as string) || undefined,
         event_id: eventId === "none" ? null : eventId,
-        estimated_cost: Number(formData.get("estimated_cost")) || 0,
+        cost_type: costType,
+        per_guest_cost: isPerGuest ? perGuestCostNum : null,
+        estimated_cost: isPerGuest
+          ? perGuestCostNum * (guestCount ?? 0)
+          : Number(formData.get("estimated_cost")) || 0,
         actual_cost: formData.get("actual_cost")
           ? Number(formData.get("actual_cost"))
           : undefined,
@@ -106,7 +120,7 @@ export function BudgetFormDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="event_id">Linked event</Label>
-            <Select name="event_id" defaultValue={item?.event_id ?? "none"}>
+            <Select value={eventId} onValueChange={(v) => v && setEventId(v)}>
               <SelectTrigger id="event_id" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -120,7 +134,45 @@ export function BudgetFormDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+
+          <div className="grid gap-2">
+            <Label htmlFor="cost_type">How is this priced?</Label>
+            <Select value={costType} onValueChange={(v) => v && setCostType(v as BudgetCostType)}>
+              <SelectTrigger id="cost_type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="flat">Flat amount</SelectItem>
+                <SelectItem value="per_guest">Per guest attending the event</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isPerGuest ? (
+            <div className="grid gap-2 rounded-lg border bg-muted/40 p-3">
+              <Label htmlFor="per_guest_cost">Cost per guest (£)</Label>
+              <Input
+                id="per_guest_cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={perGuestCost}
+                onChange={(e) => setPerGuestCost(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                {eventId === "none" ? (
+                  "Select a linked event above to calculate the total automatically."
+                ) : (
+                  <>
+                    {formatGBP(Number(perGuestCost) || 0)} × {guestCount} guest{guestCount === 1 ? "" : "s"} not
+                    declined for {eventName} = <strong>{formatGBP((Number(perGuestCost) || 0) * (guestCount ?? 0))}</strong>.
+                    Updates automatically as guests are added or declined.
+                  </>
+                )}
+              </p>
+            </div>
+          ) : (
             <div className="grid gap-2">
               <Label htmlFor="estimated_cost">Estimated (£)</Label>
               <Input
@@ -129,10 +181,13 @@ export function BudgetFormDialog({
                 type="number"
                 min="0"
                 step="0.01"
-                defaultValue={item?.estimated_cost ?? ""}
+                defaultValue={item?.cost_type === "flat" ? item?.estimated_cost : ""}
                 required
               />
             </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="actual_cost">Actual (£)</Label>
               <Input

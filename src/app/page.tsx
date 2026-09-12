@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatDateTime, formatGBP } from "@/lib/format";
 import { taskVisualStatus } from "@/lib/gantt";
+import { guestCountsByEvent, resolvedEstimatedCost } from "@/lib/budget";
 import { Landmark, UtensilsCrossed, Ship, MapPin } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,8 @@ export default async function DashboardPage() {
   const invitedCount = rsvps.filter((r) => r.status === "invited").length;
   const declinedCount = rsvps.filter((r) => r.status === "declined").length;
 
-  const totalEstimated = budgetItems.reduce((sum, i) => sum + Number(i.estimated_cost), 0);
+  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps);
+  const totalEstimated = budgetItems.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
   const totalPaid = budgetItems.reduce((sum, i) => sum + Number(i.amount_paid), 0);
   const paidPct = totalEstimated > 0 ? Math.min(100, (totalPaid / totalEstimated) * 100) : 0;
 

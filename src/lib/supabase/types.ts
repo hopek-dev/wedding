@@ -1,7 +1,6 @@
 export type EventKey = "ceremony" | "reception" | "boat_party" | string;
 
 export type RsvpStatus = "not_invited" | "invited" | "confirmed" | "declined";
-export type GuestSide = "partner_1" | "partner_2" | "both";
 export type BudgetStatus = "planned" | "booked" | "paid";
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
@@ -23,15 +22,18 @@ export interface WeddingEvent {
 
 export interface Guest {
   id: string;
-  full_name: string;
+  first_name: string;
+  last_name: string | null;
   email: string | null;
   phone: string | null;
-  side: GuestSide;
-  plus_one_allowed: boolean;
-  plus_one_name: string | null;
+  plus_one_of: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export function guestFullName(guest: Pick<Guest, "first_name" | "last_name">) {
+  return [guest.first_name, guest.last_name].filter(Boolean).join(" ");
 }
 
 export interface GuestRsvp {
@@ -44,6 +46,8 @@ export interface GuestRsvp {
   updated_at: string;
 }
 
+export type BudgetCostType = "flat" | "per_guest";
+
 export interface BudgetItem {
   id: string;
   category: string;
@@ -54,6 +58,8 @@ export interface BudgetItem {
   amount_paid: number;
   due_date: string | null;
   status: BudgetStatus;
+  cost_type: BudgetCostType;
+  per_guest_cost: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

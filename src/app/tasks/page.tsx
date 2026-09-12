@@ -48,13 +48,13 @@ export default async function TasksPage() {
         <TaskFormDialog events={events} />
       </div>
 
-      <Tabs defaultValue="list">
+      <Tabs defaultValue="list" className="min-w-0">
         <TabsList>
           <TabsTrigger value="list">List</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="mt-4">
+        <TabsContent value="list" className="mt-4 min-w-0">
           <div className="overflow-x-auto rounded-lg border bg-card">
             <Table>
               <TableHeader>
@@ -110,7 +110,7 @@ export default async function TasksPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="timeline" className="mt-4">
+        <TabsContent value="timeline" className="mt-4 min-w-0">
           <GanttChart tasks={tasks} events={events} />
         </TabsContent>
       </Tabs>

@@ -57,7 +57,7 @@ export function ImportGuestsDialog() {
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
       const result = parseGuestRows(rows);
       if (!result.matchedName) {
-        toast.error("Couldn't find a name column. Expected a header like \"Full Name\" or \"Name\".");
+        toast.error("Couldn't find a name column. Expected a header like \"First Name\" or \"Full Name\".");
         reset();
         return;
       }
@@ -108,9 +108,10 @@ export function ImportGuestsDialog() {
         </DialogHeader>
         <div className="grid gap-4">
           <p className="text-sm text-muted-foreground">
-            Upload an .xlsx, .xls, or .csv file. Recognized columns: <strong>Full Name</strong> (required),
-            Email, Phone, Side (Partner 1 / Partner 2 / Both), Plus One Allowed, Plus One Name, Notes. Column
-            order doesn&apos;t matter and names are matched flexibly.
+            Upload an .xlsx, .xls, or .csv file. Recognized columns: <strong>First Name</strong> +{" "}
+            <strong>Last Name</strong> (or a single <strong>Full Name</strong> column), Email, Phone, Notes.
+            Column order doesn&apos;t matter and names are matched flexibly. Plus-one links aren&apos;t
+            imported — connect those afterward by editing a guest.
           </p>
           <Input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} disabled={parsing} />
           {parsing && <p className="text-sm text-muted-foreground">Reading {fileName}...</p>}
@@ -124,21 +125,19 @@ export function ImportGuestsDialog() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
+                      <TableHead>First name</TableHead>
+                      <TableHead>Last name</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Side</TableHead>
-                      <TableHead>Plus one</TableHead>
+                      <TableHead>Phone</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {guests.slice(0, PREVIEW_LIMIT).map((guest, i) => (
                       <TableRow key={i}>
-                        <TableCell>{guest.full_name}</TableCell>
+                        <TableCell>{guest.first_name}</TableCell>
+                        <TableCell className="text-muted-foreground">{guest.last_name}</TableCell>
                         <TableCell className="text-muted-foreground">{guest.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{guest.side}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {guest.plus_one_allowed ? guest.plus_one_name || "Yes" : ""}
-                        </TableCell>
+                        <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

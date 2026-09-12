@@ -23,25 +23,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createGuest, updateGuest } from "@/app/actions/guests";
-import type { Guest } from "@/lib/supabase/types";
+import { guestFullName, type Guest } from "@/lib/supabase/types";
 import { Pencil, Plus } from "lucide-react";
 
-export function GuestFormDialog({ guest }: { guest?: Guest }) {
+export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Guest }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!guest;
 
+  // A guest can't be their own plus-one, and (to avoid chains) can't be
+  // linked to a guest who is themselves already a plus-one of someone else.
+  const plusOneOptions = guests.filter((g) => g.id !== guest?.id && !g.plus_one_of);
+
   async function handleSubmit(formData: FormData) {
     setSaving(true);
     try {
+      const plusOneOf = formData.get("plus_one_of") as string;
       const input = {
-        full_name: formData.get("full_name") as string,
+        first_name: formData.get("first_name") as string,
+        last_name: (formData.get("last_name") as string) || undefined,
         email: (formData.get("email") as string) || undefined,
         phone: (formData.get("phone") as string) || undefined,
-        side: formData.get("side") as Guest["side"],
-        plus_one_allowed: formData.get("plus_one_allowed") === "on",
-        plus_one_name: (formData.get("plus_one_name") as string) || undefined,
+        plus_one_of: plusOneOf === "none" ? null : plusOneOf,
         notes: (formData.get("notes") as string) || undefined,
       };
       if (isEdit) {
@@ -77,14 +81,20 @@ export function GuestFormDialog({ guest }: { guest?: Guest }) {
           <DialogTitle>{isEdit ? "Edit guest" : "Add guest"}</DialogTitle>
         </DialogHeader>
         <form action={handleSubmit} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="full_name">Full name</Label>
-            <Input
-              id="full_name"
-              name="full_name"
-              defaultValue={guest?.full_name}
-              required
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="first_name">First name</Label>
+              <Input
+                id="first_name"
+                name="first_name"
+                defaultValue={guest?.first_name}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="last_name">Last name</Label>
+              <Input id="last_name" name="last_name" defaultValue={guest?.last_name ?? ""} />
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
@@ -97,37 +107,20 @@ export function GuestFormDialog({ guest }: { guest?: Guest }) {
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="side">Side</Label>
-            <Select name="side" defaultValue={guest?.side ?? "both"}>
-              <SelectTrigger id="side" className="w-full">
+            <Label htmlFor="plus_one_of">Plus one of</Label>
+            <Select name="plus_one_of" defaultValue={guest?.plus_one_of ?? "none"}>
+              <SelectTrigger id="plus_one_of" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="partner_1">Partner 1</SelectItem>
-                <SelectItem value="partner_2">Partner 2</SelectItem>
-                <SelectItem value="both">Both</SelectItem>
+                <SelectItem value="none">Not a plus-one</SelectItem>
+                {plusOneOptions.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>
+                    {guestFullName(g)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="plus_one_allowed"
-              name="plus_one_allowed"
-              type="checkbox"
-              defaultChecked={guest?.plus_one_allowed}
-              className="size-4 rounded border-input"
-            />
-            <Label htmlFor="plus_one_allowed" className="font-normal">
-              Plus-one allowed
-            </Label>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="plus_one_name">Plus-one name (if known)</Label>
-            <Input
-              id="plus_one_name"
-              name="plus_one_name"
-              defaultValue={guest?.plus_one_name ?? ""}
-            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes</Label>

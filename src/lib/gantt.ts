@@ -77,10 +77,15 @@ export function monthTicks(rangeStart: Date, rangeEnd: Date): MonthTick[] {
   const ticks: MonthTick[] = [];
   const cursor = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
   while (cursor <= rangeEnd) {
-    ticks.push({
-      label: cursor.toLocaleDateString("en-GB", { month: "short", year: "numeric" }),
-      leftPct: datePct(cursor, rangeStart, rangeEnd),
-    });
+    // A month-start before rangeStart would otherwise clamp to 0% and bunch
+    // up against the next real tick -- skip it instead of showing a
+    // misleadingly-overlapping label.
+    if (cursor >= rangeStart) {
+      ticks.push({
+        label: cursor.toLocaleDateString("en-GB", { month: "short", year: "numeric" }),
+        leftPct: datePct(cursor, rangeStart, rangeEnd),
+      });
+    }
     cursor.setMonth(cursor.getMonth() + 1);
   }
   return ticks;

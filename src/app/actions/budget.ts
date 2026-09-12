@@ -23,6 +23,8 @@ export async function createBudgetItem(input: {
   amount_paid?: number;
   due_date?: string;
   status?: BudgetItem["status"];
+  cost_type?: BudgetItem["cost_type"];
+  per_guest_cost?: number | null;
   notes?: string;
 }) {
   const supabase = createServiceClient();

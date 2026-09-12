@@ -8,7 +8,7 @@ export async function listGuestsWithRsvps() {
   const supabase = createServiceClient();
   const [{ data: guests, error: guestsError }, { data: rsvps, error: rsvpsError }] =
     await Promise.all([
-      supabase.from("guests").select("*").order("full_name", { ascending: true }),
+      supabase.from("guests").select("*").order("first_name", { ascending: true }),
       supabase.from("guest_rsvps").select("*"),
     ]);
   if (guestsError) throw guestsError;
@@ -20,12 +20,11 @@ export async function listGuestsWithRsvps() {
 }
 
 export async function createGuest(input: {
-  full_name: string;
+  first_name: string;
+  last_name?: string;
   email?: string;
   phone?: string;
-  side?: Guest["side"];
-  plus_one_allowed?: boolean;
-  plus_one_name?: string;
+  plus_one_of?: string | null;
   notes?: string;
 }) {
   const supabase = createServiceClient();
@@ -55,12 +54,10 @@ export async function createGuest(input: {
 
 export async function bulkCreateGuests(
   guests: Array<{
-    full_name: string;
+    first_name: string;
+    last_name?: string;
     email?: string;
     phone?: string;
-    side?: Guest["side"];
-    plus_one_allowed?: boolean;
-    plus_one_name?: string;
     notes?: string;
   }>
 ) {

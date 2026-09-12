@@ -1,24 +1,19 @@
-import type { GuestSide } from "@/lib/supabase/types";
-
 export interface ImportedGuest {
-  full_name: string;
+  first_name: string;
+  last_name?: string;
   email?: string;
   phone?: string;
-  side: GuestSide;
-  plus_one_allowed: boolean;
-  plus_one_name?: string;
   notes?: string;
 }
 
-type Field = "full_name" | "email" | "phone" | "side" | "plus_one_allowed" | "plus_one_name" | "notes";
+type Field = "first_name" | "last_name" | "full_name" | "email" | "phone" | "notes";
 
 const ALIASES: Record<Field, string[]> = {
+  first_name: ["first name", "firstname", "given name"],
+  last_name: ["last name", "lastname", "surname", "family name"],
   full_name: ["full name", "name", "guest name", "guest"],
   email: ["email", "email address", "e mail"],
   phone: ["phone", "phone number", "mobile", "mobile number", "tel", "telephone"],
-  side: ["side", "partner", "whose guest", "which side"],
-  plus_one_allowed: ["plus one allowed", "plus one", "plus 1", "has plus one", "allow plus one"],
-  plus_one_name: ["plus one name", "plus 1 name", "guest of", "partner name"],
   notes: ["notes", "note", "comments", "dietary", "dietary requirements", "dietary notes"],
 };
 
@@ -42,42 +37,39 @@ function cell(row: Record<string, unknown>, key: string | undefined) {
   return value == null ? "" : String(value).trim();
 }
 
-function truthy(value: string) {
-  return ["y", "yes", "true", "1", "x"].includes(value.toLowerCase());
-}
-
-function parseSide(value: string): GuestSide {
-  const s = value.toLowerCase();
-  if (["1", "partner 1", "partner1", "p1"].includes(s)) return "partner_1";
-  if (["2", "partner 2", "partner2", "p2"].includes(s)) return "partner_2";
-  return "both";
-}
-
 export function parseGuestRows(rows: Record<string, unknown>[]) {
   if (rows.length === 0) return { guests: [] as ImportedGuest[], skipped: 0, matchedName: false };
 
   const headers = Object.keys(rows[0]);
   const map = buildHeaderMap(headers);
+  const hasNameColumn = !!map.first_name || !!map.full_name;
   const guests: ImportedGuest[] = [];
   let skipped = 0;
 
   for (const row of rows) {
-    const fullName = cell(row, map.full_name);
-    if (!fullName) {
+    let firstName = cell(row, map.first_name);
+    let lastName = cell(row, map.last_name);
+
+    if (!firstName && map.full_name) {
+      const full = cell(row, map.full_name);
+      const [first, ...rest] = full.split(" ").filter(Boolean);
+      firstName = first ?? "";
+      lastName = lastName || rest.join(" ");
+    }
+
+    if (!firstName) {
       skipped += 1;
       continue;
     }
-    const plusOneName = cell(row, map.plus_one_name);
+
     guests.push({
-      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName || undefined,
       email: cell(row, map.email) || undefined,
       phone: cell(row, map.phone) || undefined,
-      side: map.side ? parseSide(cell(row, map.side)) : "both",
-      plus_one_allowed: (map.plus_one_allowed ? truthy(cell(row, map.plus_one_allowed)) : false) || !!plusOneName,
-      plus_one_name: plusOneName || undefined,
       notes: cell(row, map.notes) || undefined,
     });
   }
 
-  return { guests, skipped, matchedName: !!map.full_name };
+  return { guests, skipped, matchedName: hasNameColumn };
 }
