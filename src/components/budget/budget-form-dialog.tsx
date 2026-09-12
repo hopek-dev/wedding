@@ -149,7 +149,7 @@ export function BudgetFormDialog({
           </div>
 
           {isPerGuest ? (
-            <div className="grid gap-2 rounded-lg border bg-muted/40 p-3">
+            <div key="per_guest_cost" className="grid gap-2 rounded-lg border bg-muted/40 p-3">
               <Label htmlFor="per_guest_cost">Cost per guest (£)</Label>
               <Input
                 id="per_guest_cost"
@@ -173,7 +173,7 @@ export function BudgetFormDialog({
               </p>
             </div>
           ) : (
-            <div className="grid gap-2">
+            <div key="estimated_cost" className="grid gap-2">
               <Label htmlFor="estimated_cost">Estimated (£)</Label>
               <Input
                 id="estimated_cost"
