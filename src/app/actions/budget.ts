@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { BudgetItem } from "@/lib/supabase/types";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function listBudgetItems() {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("budget_items")
@@ -27,6 +29,7 @@ export async function createBudgetItem(input: {
   per_guest_cost?: number | null;
   notes?: string;
 }) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("budget_items").insert(input);
   if (error) throw error;
@@ -35,6 +38,7 @@ export async function createBudgetItem(input: {
 }
 
 export async function updateBudgetItem(id: string, patch: Partial<BudgetItem>) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("budget_items")
@@ -46,6 +50,7 @@ export async function updateBudgetItem(id: string, patch: Partial<BudgetItem>) {
 }
 
 export async function deleteBudgetItem(id: string) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("budget_items").delete().eq("id", id);
   if (error) throw error;

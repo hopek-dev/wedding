@@ -5,7 +5,10 @@ import { EnvelopeIntro } from "@/components/rsvp/envelope-intro";
 import { GuestTheme } from "@/components/rsvp/guest-theme";
 import { RsvpForm } from "@/components/rsvp/rsvp-form";
 import { PREVIEW_TOKEN, invitedName, inviteEventLines } from "@/lib/invitation";
+import { WeddingSiteCard } from "@/components/rsvp/wedding-site-card";
+import { isAdmin } from "@/lib/require-admin";
 import { formatDeadline } from "@/lib/rsvp-deadline";
+import { WEDDING_SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +51,12 @@ export default async function RsvpPage({
   const { token } = await params;
   const { name } = await searchParams;
   const preview = token === PREVIEW_TOKEN;
-  const party = preview ? await getPreviewParty(name?.slice(0, 30) || undefined) : await getRsvpParty(token);
+  // The made-up preview guest is for the planner only; to everyone else it is just an unknown link.
+  const party = preview
+    ? (await isAdmin())
+      ? await getPreviewParty(name?.slice(0, 30) || undefined)
+      : null
+    : await getRsvpParty(token);
 
   // Guests who have already opened their envelope go straight to the page.
   const cookieName = preview ? null : `opened-${token.slice(0, 16)}`;
@@ -64,11 +72,17 @@ export default async function RsvpPage({
       )}
       <header className="px-6 pt-12 pb-8 text-center">
         <h1 className="font-cursive whitespace-nowrap text-5xl leading-tight text-muted-foreground sm:text-7xl">Vanessa &amp; Hope</h1>
-        <div className="mt-5 flex justify-center">
-          <span className="border-b border-muted-foreground py-1 text-[13px] font-light tracking-wide text-muted-foreground">
-            RSVP
-          </span>
-        </div>
+        <nav className="mt-5 flex justify-center gap-7 text-[13px] font-light tracking-wide text-muted-foreground">
+          <span className="border-b border-muted-foreground py-1">RSVP</span>
+          <a
+            href={WEDDING_SITE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border-b border-transparent py-1 transition-colors hover:border-muted-foreground"
+          >
+            Wedding Website ↗
+          </a>
+        </nav>
       </header>
 
       <div className="flex h-44 gap-[3px] bg-white sm:h-72">
@@ -94,6 +108,7 @@ export default async function RsvpPage({
             </p>
           </div>
         )}
+        <WeddingSiteCard className="mt-5" />
       </div>
     </div>
   );

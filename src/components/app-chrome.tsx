@@ -8,7 +8,7 @@ import { BottomTabBar } from "@/components/bottom-tab-bar";
 // they render bare, without any of the planner's navigation.
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname.startsWith("/rsvp/")) {
+  if (pathname.startsWith("/rsvp/") || pathname === "/login") {
     return <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>;
   }
   return (

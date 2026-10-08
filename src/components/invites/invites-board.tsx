@@ -313,7 +313,7 @@ export function InvitesBoard({
           />
           <p className="text-xs text-muted-foreground">
             Use <code>{"{first_name}"}</code>, <code>{"{full_name}"}</code> and <code>{"{link}"}</code> (each guest&apos;s
-            personal RSVP link) and <code>{"{deadline}"}</code> (the RSVP deadline above). Keep <code>{"{link}"}</code> on
+            personal RSVP link) <code>{"{deadline}"}</code> (the RSVP deadline above) and <code>{"{website}"}</code> (your wedding website). Keep <code>{"{link}"}</code> on
             its own line so WhatsApp makes it tappable. Saved in this browser.
           </p>
           <a

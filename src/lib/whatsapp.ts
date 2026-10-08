@@ -1,3 +1,5 @@
+import { WEDDING_SITE_URL } from "@/lib/site";
+
 // Helpers for sending RSVP links over WhatsApp using click-to-chat (wa.me)
 // links. These open WhatsApp with the message pre-filled; the sender taps Send.
 
@@ -43,14 +45,14 @@ export function savedInviteTemplate() {
 }
 
 export const DEFAULT_INVITE_TEMPLATE =
-  "Dear {first_name},\n\n💌 *Vanessa & Hope* request the pleasure of your company at their wedding celebrations.\n\nYour personal invitation is waiting for you. Tap to open it and let us know if you can join us:\n{link}\n\nKindly reply by {deadline}.\n\nWith love,\nVanessa & Hope";
+  "Dear {first_name},\n\n💌 *Vanessa & Hope* request the pleasure of your company at their wedding celebrations.\n\nYour personal invitation is waiting for you. Tap to open it and let us know if you can join us:\n{link}\n\nKindly reply by {deadline}.\n\nThe schedule, travel, places to stay and our gift list are all on our wedding website:\n{website}\n\nWith love,\nVanessa & Hope";
 
 export const DEFAULT_REMINDER_TEMPLATE =
   "Dear {first_name},\n\nA gentle nudge from *Vanessa & Hope*: we haven't had your RSVP yet. It only takes a minute:\n{link}\n\nKindly reply by {deadline}.\n\nThank you!";
 
 export function renderTemplate(
   template: string,
-  vars: { first_name: string; full_name: string; link: string; deadline?: string }
+  vars: { first_name: string; full_name: string; link: string; deadline?: string; website?: string }
 ) {
   // With no deadline set, any line mentioning it is dropped instead of
   // reading "reply by the RSVP deadline".
@@ -61,7 +63,8 @@ export function renderTemplate(
     .replaceAll("{first_name}", vars.first_name)
     .replaceAll("{full_name}", vars.full_name)
     .replaceAll("{link}", vars.link)
-    .replaceAll("{deadline}", vars.deadline ?? "");
+    .replaceAll("{deadline}", vars.deadline ?? "")
+    .replaceAll("{website}", vars.website ?? WEDDING_SITE_URL);
 }
 
 // The address RSVP links point at. Prefer the configured public URL; otherwise

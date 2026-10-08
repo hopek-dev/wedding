@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { Guest, GuestRsvp, WeddingEvent } from "@/lib/supabase/types";
 import { getRsvpDeadline } from "@/app/actions/settings";
 import { formatDeadline, isRsvpClosed } from "@/lib/rsvp-deadline";
+import { requireAdmin } from "@/lib/require-admin";
 
 export interface RsvpParty {
   guest: Guest;
@@ -55,6 +56,7 @@ export async function getRsvpParty(token: string): Promise<RsvpParty | null> {
 // envelope and RSVP page can be seen exactly as a guest sees them without
 // touching any real guest. Replies in preview mode are never saved.
 export async function getPreviewParty(firstName = "Alex"): Promise<RsvpParty> {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { data: events } = await supabase.from("events").select("*").order("sort_order", { ascending: true });
   const deadline = await getRsvpDeadline();

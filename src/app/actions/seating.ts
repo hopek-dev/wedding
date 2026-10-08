@@ -2,8 +2,10 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import type { SeatAssignment, SeatingTable } from "@/lib/supabase/types";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function listSeating() {
+  await requireAdmin();
   const supabase = createServiceClient();
   const [{ data: tables, error: tablesError }, { data: assignments, error: assignError }] = await Promise.all([
     supabase.from("seating_tables").select("*").order("created_at", { ascending: true }),
@@ -25,6 +27,7 @@ export async function createTable(input: {
   x: number;
   y: number;
 }) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { data, error } = await supabase.from("seating_tables").insert(input).select("*").single();
   if (error) throw error;
@@ -35,12 +38,14 @@ export async function updateTable(
   id: string,
   patch: Partial<Pick<SeatingTable, "name" | "shape" | "capacity" | "x" | "y">>
 ) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("seating_tables").update(patch).eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteTable(id: string) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("seating_tables").delete().eq("id", id);
   if (error) throw error;
@@ -57,6 +62,7 @@ export async function saveEventSeating(
   eventId: string,
   rows: Array<{ table_id: string; guest_id: string; seat_index: number }>
 ): Promise<SeatingResult> {
+  await requireAdmin();
   const supabase = createServiceClient();
   // Insert before deleting would clash on unique seats, so clear first, but
   // only after checking the new rows can be written at all.
@@ -76,12 +82,14 @@ export async function saveEventSeating(
 
 // Removes every table for an event; their seat assignments go with them.
 export async function deleteAllTables(eventId: string): Promise<SeatingResult> {
+  await requireAdmin();
   const { error } = await createServiceClient().from("seating_tables").delete().eq("event_id", eventId);
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
 // Null when seating can be saved; otherwise what's wrong with the database.
 export async function checkSeatingSetup(): Promise<string | null> {
+  await requireAdmin();
   const { error } = await createServiceClient().from("seat_assignments").select("seat_index").limit(1);
   return error ? error.message : null;
 }

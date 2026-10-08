@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { WeddingEvent } from "@/lib/supabase/types";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function listEvents() {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("events")
@@ -16,6 +18,7 @@ export async function listEvents() {
 }
 
 export async function updateEvent(id: string, patch: Partial<WeddingEvent>) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("events")
@@ -34,6 +37,7 @@ export async function createEvent(input: {
   notes?: string;
   sort_order?: number;
 }) {
+  await requireAdmin();
   const supabase = createServiceClient();
   let sort_order = input.sort_order;
   if (sort_order === undefined) {
@@ -56,6 +60,7 @@ export async function createEvent(input: {
 }
 
 export async function deleteEvent(id: string) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw error;
@@ -69,6 +74,7 @@ export type ReorderResult = { ok: true } | { ok: false; error: string };
 // renumbered 1..n so the order is exact (never two events sharing a number).
 // Dashboard, seating tabs, guest columns and the RSVP page all follow it.
 export async function reorderEvents(orderedIds: string[]): Promise<ReorderResult> {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { data: existing, error: readError } = await supabase.from("events").select("id");
   if (readError) return { ok: false, error: readError.message };

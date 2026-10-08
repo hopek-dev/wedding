@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -24,6 +26,14 @@ export function Nav() {
       className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-md"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
+      <form action={logout} className="absolute top-2 right-3 z-10 sm:top-3 sm:right-5">
+        <button
+          type="submit"
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <LogOut className="size-3.5" /> Sign out
+        </button>
+      </form>
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-3 sm:px-6 sm:py-4">
         <Link
           href="/"

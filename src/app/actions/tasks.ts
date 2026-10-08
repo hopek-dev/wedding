@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Task } from "@/lib/supabase/types";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function listTasks() {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("tasks")
@@ -24,6 +26,7 @@ export async function createTask(input: {
   priority?: Task["priority"];
   notes?: string;
 }) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("tasks").insert(input);
   if (error) throw error;
@@ -32,6 +35,7 @@ export async function createTask(input: {
 }
 
 export async function updateTask(id: string, patch: Partial<Task>) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("tasks")
@@ -43,6 +47,7 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 }
 
 export async function deleteTask(id: string) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("tasks").delete().eq("id", id);
   if (error) throw error;

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { DEADLINE_PATTERN } from "@/lib/rsvp-deadline";
+import { requireAdmin } from "@/lib/require-admin";
 
 const DEADLINE_KEY = "rsvp_deadline";
 
@@ -20,6 +21,7 @@ export type SaveDeadlineResult = { ok: true } | { ok: false; error: string };
 
 // Pass null to remove the deadline and keep RSVPs open.
 export async function setRsvpDeadline(deadline: string | null): Promise<SaveDeadlineResult> {
+  await requireAdmin();
   if (deadline !== null && !DEADLINE_PATTERN.test(deadline)) return { ok: false, error: "Choose a valid date." };
   const supabase = createServiceClient();
   const { error } = await supabase

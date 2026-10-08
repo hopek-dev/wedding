@@ -1,4 +1,5 @@
 import type { InviteEventLine } from "@/lib/invitation";
+import { WEDDING_SITE_LABEL } from "@/lib/site";
 
 // The invitation itself. Everything is sized from --w (the envelope width), so
 // the same card works inside the envelope on any screen. Styles: envelope.css.
@@ -36,6 +37,7 @@ export function InvitationCard({
           </p>
         )}
         {deadline && <p className="inv-reply">Kindly reply by {deadline}</p>}
+        <p className="inv-site">Details &amp; gift list: {WEDDING_SITE_LABEL}</p>
       </div>
     </div>
   );

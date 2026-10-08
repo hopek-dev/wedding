@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Guest, GuestRsvp, RsvpStatus } from "@/lib/supabase/types";
 import type { ImportedGuest } from "@/lib/guest-import";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function listGuestsWithRsvps() {
+  await requireAdmin();
   const supabase = createServiceClient();
   const [{ data: guests, error: guestsError }, { data: rsvps, error: rsvpsError }] =
     await Promise.all([
@@ -31,6 +33,7 @@ export async function createGuest(input: {
   plus_one_of?: string | null;
   notes?: string;
 }) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { data: guest, error } = await supabase
     .from("guests")
@@ -224,6 +227,7 @@ export type ImportResult =
 // Server action errors are redacted in production, so failures are returned as
 // data and the dialog can show the real reason (e.g. a missing migration).
 export async function bulkCreateGuests(guests: ImportedGuest[], mode: ImportMode = "skip"): Promise<ImportResult> {
+  await requireAdmin();
   try {
     return { ok: true, ...(await runBulkImport(guests, mode)) };
   } catch (err) {
@@ -233,6 +237,7 @@ export async function bulkCreateGuests(guests: ImportedGuest[], mode: ImportMode
 }
 
 export async function updateGuest(id: string, patch: Partial<Guest>) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("guests")
@@ -244,6 +249,7 @@ export async function updateGuest(id: string, patch: Partial<Guest>) {
 }
 
 export async function deleteGuest(id: string) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("guests").delete().eq("id", id);
   if (error) throw error;
@@ -258,6 +264,7 @@ export async function upsertRsvp(input: {
   headcount?: number;
   dietary_notes?: string;
 }) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("guest_rsvps")
@@ -272,6 +279,7 @@ export async function upsertRsvp(input: {
 
 // Marks every guest who is still "not invited" to an event as invited.
 export async function inviteAllToEvent(eventId: string) {
+  await requireAdmin();
   const supabase = createServiceClient();
 
   // Guests added before this event existed have no RSVP record for it, so
@@ -307,6 +315,7 @@ export async function inviteAllToEvent(eventId: string) {
 }
 
 export async function markEmailed(guestId: string) {
+  await requireAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("guests")

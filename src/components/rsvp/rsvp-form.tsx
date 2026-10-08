@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { submitRsvp, type RsvpParty } from "@/app/actions/rsvp";
 import { formatDateTime } from "@/lib/format";
 import { daysUntil, formatDeadline } from "@/lib/rsvp-deadline";
+import { WEDDING_SITE_URL } from "@/lib/site";
 import { guestFullName } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +88,13 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         <h2 className="mt-3 text-2xl font-light tracking-wide">Thank you, {party.guest.first_name}!</h2>
         <p className="mt-2 text-muted-foreground">
           {anyYes ? "We can't wait to celebrate with you." : "We'll miss you, and thank you for letting us know."}
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          For the schedule, travel, places to stay and our gift list, visit{" "}
+          <a href={WEDDING_SITE_URL} target="_blank" rel="noopener noreferrer" className="text-foreground underline underline-offset-4">
+            our wedding website
+          </a>
+          .
         </p>
         {party.deadline && !locked ? (
           <p className="mt-4 text-sm text-muted-foreground">
