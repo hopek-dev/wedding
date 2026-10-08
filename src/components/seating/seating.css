@@ -138,7 +138,7 @@ body.sp-dragging, body.sp-dragging * { cursor: grabbing !important; user-select:
 
 /* Phones and small tablets: unseated guests become a bottom tray so tables stay in view while dragging. */
 @media (max-width: 959px) {
-  .sp .app { padding-bottom: 150px; gap: 12px; }
+  .sp .app { padding-bottom: 210px; gap: 12px; }
   .sp .title h1 { font-size: 24px; }
   .sp .hide-sm { display: none; }
   .sp .tools { width: 100%; }
@@ -146,15 +146,16 @@ body.sp-dragging, body.sp-dragging * { cursor: grabbing !important; user-select:
   .sp .tools .field { justify-content: space-between; }
   .sp .floor-wrap { justify-content: center; }
   .sp .side { position: fixed; left: 0; right: 0; bottom: var(--tab-offset); z-index: 30; border-radius: 16px 16px 0 0; border-bottom: 0; box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.2); }
-  .sp .side-head { flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 0; }
+  .sp .side-head { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 0; }
   .sp .side-head h2 { flex: none; gap: 6px; font-size: 14px; }
-  .sp .side-head .search { flex: 1; min-width: 0; }
+  .sp .side-head .search { flex: 1 1 8rem; min-width: 0; }
+  .sp .side-head .field { flex: 1 1 100%; }
   .sp .tray-toggle { display: inline-block; }
   .sp #sp-pool { flex-direction: row; overflow-x: auto; overflow-y: hidden; max-height: none; min-height: 0; padding: 2px 12px 10px; border-radius: 0; gap: 6px; align-items: stretch; }
   .sp #sp-pool .chip { flex: none; touch-action: pan-x; }
   .sp #sp-pool .empty-note { padding: 8px 4px; white-space: nowrap; }
   .sp .tray-closed #sp-pool { display: none; }
-  .sp .toast { bottom: calc(150px + var(--tab-offset)); }
+  .sp .toast { bottom: calc(210px + var(--tab-offset)); }
 }
 @media (pointer: coarse) {
   .sp .btn { min-height: 42px; }
@@ -166,3 +167,21 @@ body.sp-dragging, body.sp-dragging * { cursor: grabbing !important; user-select:
   .sp input, .sp select { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .sp * { transition: none !important; } }
+
+/* Renaming a table: tap the name on the table, or use the pencil field below it. */
+.sp .linen .name-btn { white-space: normal; text-wrap: balance; line-height: 1.1; max-width: 82%; overflow: visible; cursor: text; border-bottom: 1px dashed transparent; transition: border-color 0.15s; }
+.sp .linen .name-btn:hover { border-bottom-color: var(--ink-soft); }
+.sp .linen .name-input {
+  width: 80%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--accent);
+  text-align: center;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 0;
+  outline: none;
+}
+.sp .tbar .name-field { display: flex; align-items: center; gap: 4px; flex: 1 1 90px; min-width: 0; color: var(--ink-soft); }
+.sp .tbar .name-field input { flex: 1; }

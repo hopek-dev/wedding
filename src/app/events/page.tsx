@@ -1,6 +1,7 @@
 import { listEvents } from "@/app/actions/events";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventEditDialog } from "@/components/events/event-edit-dialog";
+import { EventOrderButtons } from "@/components/events/event-order-buttons";
 import { formatDateTime } from "@/lib/format";
 import { MapPin, Shirt, StickyNote } from "lucide-react";
 
@@ -14,12 +15,12 @@ export default async function EventsPage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Events</h1>
         <p className="text-sm text-muted-foreground">
-          Ceremony, reception, and boat party — the full day in one place.
+          The full day in one place. Use the arrows to change the order events appear in across the app.
         </p>
       </div>
 
       <div className="grid gap-4">
-        {events.map((event) => (
+        {events.map((event, index) => (
           <Card key={event.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
@@ -29,7 +30,12 @@ export default async function EventsPage() {
                   {event.ends_at ? ` – ${formatDateTime(event.ends_at)}` : ""}
                 </p>
               </div>
-              <EventEditDialog event={event} />
+              <div className="flex items-center gap-1">
+                {events.length > 1 && (
+                  <EventOrderButtons ids={events.map((e) => e.id)} index={index} name={event.name} />
+                )}
+                <EventEditDialog event={event} />
+              </div>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
               <div className="flex items-start gap-2">

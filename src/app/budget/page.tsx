@@ -54,29 +54,29 @@ export default async function BudgetPage() {
         <BudgetFormDialog events={events} categories={categories} guestCounts={guestCounts}/>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Estimated total</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Estimated total</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatGBP(totalEstimated)}</CardContent>
+          <CardContent className="text-lg font-semibold sm:text-2xl">{formatGBP(totalEstimated)}</CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Actual / expected</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Actual / expected</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatGBP(totalActual)}</CardContent>
+          <CardContent className="text-lg font-semibold sm:text-2xl">{formatGBP(totalActual)}</CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Paid so far</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Paid so far</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatGBP(totalPaid)}</CardContent>
+          <CardContent className="text-lg font-semibold sm:text-2xl">{formatGBP(totalPaid)}</CardContent>
         </Card>
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-card">
-        <Table>
+        <Table className="stack-table">
           <TableHeader>
             <TableRow>
               <TableHead>Category</TableHead>
@@ -96,12 +96,12 @@ export default async function BudgetPage() {
               const isPerGuest = item.cost_type === "per_guest" && item.event_id;
               return (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.category}</TableCell>
-                  <TableCell className="text-muted-foreground">{item.vendor_name}</TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell data-span="full" className="font-medium">{item.category}</TableCell>
+                  <TableCell data-label="Vendor" className="text-muted-foreground">{item.vendor_name}</TableCell>
+                  <TableCell data-label="Event" className="text-muted-foreground">
                     {item.event_id ? eventNameById.get(item.event_id) : "General"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Estimated">
                     <div>{formatGBP(estimated)}</div>
                     {isPerGuest && (
                       <div className="text-xs text-muted-foreground">
@@ -109,15 +109,15 @@ export default async function BudgetPage() {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{item.actual_cost != null ? formatGBP(item.actual_cost) : "—"}</TableCell>
-                  <TableCell>{formatGBP(item.amount_paid)}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(item.due_date)}</TableCell>
-                  <TableCell>
+                  <TableCell data-label="Actual">{item.actual_cost != null ? formatGBP(item.actual_cost) : "—"}</TableCell>
+                  <TableCell data-label="Paid">{formatGBP(item.amount_paid)}</TableCell>
+                  <TableCell data-label="Due" className="text-muted-foreground">{formatDate(item.due_date)}</TableCell>
+                  <TableCell data-label="Status">
                     <Badge variant={statusVariant[item.status]} className="capitalize">
                       {item.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-span="full">
                     <div className="flex items-center gap-1">
                       <BudgetFormDialog events={events} categories={categories} guestCounts={guestCounts} item={item} />
                       <DeleteBudgetButton itemId={item.id} category={item.category} />

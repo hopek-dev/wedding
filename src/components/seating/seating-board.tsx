@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createTable, deleteTable, saveEventSeating, updateTable } from "@/app/actions/seating";
 import type { Guest, GuestRsvp, SeatAssignment, SeatingTable, WeddingEvent } from "@/lib/supabase/types";
@@ -27,7 +28,6 @@ import "./seating.css";
 
 interface TableApi {
   rename: (id: string, name: string) => void;
-  commitName: (id: string) => void;
   resize: (id: string, n: number) => void;
   rotate: (id: string, dir: 1 | -1) => void;
   remove: (id: string) => void;
@@ -61,6 +61,61 @@ function Pill({
   );
 }
 
+// Edits a table's name. Enter or clicking away saves, Escape cancels, and an
+// empty name is ignored (the old name comes back) so a table is never nameless.
+function NameEditor({
+  value,
+  onCommit,
+  onDone,
+  className,
+  fontSize,
+  label,
+  autoFocus,
+}: {
+  value: string;
+  onCommit: (name: string) => void;
+  onDone?: () => void;
+  className?: string;
+  fontSize?: number;
+  label: string;
+  autoFocus?: boolean;
+}) {
+  const [draft, setDraft] = useState(value);
+  const cancelled = useRef(false);
+
+  return (
+    <input
+      className={className}
+      style={fontSize ? { fontSize } : undefined}
+      value={draft}
+      maxLength={24}
+      aria-label={label}
+      autoFocus={autoFocus}
+      onFocus={(e) => e.target.select()}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        if (cancelled.current) {
+          cancelled.current = false;
+          return;
+        }
+        const next = draft.trim();
+        if (next && next !== value) onCommit(next);
+        else setDraft(value);
+        onDone?.();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") {
+          cancelled.current = true;
+          setDraft(value);
+          onDone?.();
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 function Table({
   table,
   guests,
@@ -83,7 +138,10 @@ function Table({
   const filled = table.seats.filter((x) => x !== null).length;
   const full = filled === n;
   const scale = Math.max(0.72, Math.min(1, avail / G.size));
+  // Longer names get a smaller size and may wrap onto two lines instead of being cut off.
+  const nameSize = table.name.length > 16 ? 16 : table.name.length > 9 ? 19 : 24;
   const [armed, setArmed] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!armed) return;
@@ -101,7 +159,29 @@ function Table({
               data-table={table.id}
               style={{ left: G.c - G.linen / 2, top: G.c - G.linen / 2, width: G.linen, height: G.linen }}
             >
-              <h3>{table.name}</h3>
+              {editing ? (
+                <NameEditor
+                  className="name-input"
+                  fontSize={nameSize}
+                  label="Table name"
+                  value={table.name}
+                  autoFocus
+                  onCommit={(name) => api.rename(table.id, name)}
+                  onDone={() => setEditing(false)}
+                />
+              ) : (
+                <h3
+                  className="name-btn"
+                  style={{ fontSize: nameSize }}
+                  title="Click to rename"
+                  onClick={() => {
+                    // With a guest picked, a tap on the table seats them instead.
+                    if (selected === null) setEditing(true);
+                  }}
+                >
+                  {table.name}
+                </h3>
+              )}
               <div className="count">
                 {filled} / {n}
                 {full ? " full" : ""}
@@ -133,13 +213,15 @@ function Table({
         </div>
       </div>
       <div className="tbar">
-        <input
-          value={table.name}
-          maxLength={24}
-          aria-label="Table name"
-          onChange={(e) => api.rename(table.id, e.target.value)}
-          onBlur={() => api.commitName(table.id)}
-        />
+        <label className="name-field">
+          <Pencil size={13} aria-hidden />
+          <NameEditor
+            key={`${table.id}:${table.name}`}
+            label="Table name"
+            value={table.name}
+            onCommit={(name) => api.rename(table.id, name)}
+          />
+        </label>
         <select value={n} aria-label={`Seats at ${table.name}`} onChange={(e) => api.resize(table.id, +e.target.value)}>
           {SEAT_OPTIONS.map((o) => (
             <option key={o} value={o}>
@@ -310,10 +392,9 @@ export function SeatingBoard({
   // ----- table actions -----
   const api: TableApi = useMemo(
     () => ({
-      rename: (id, name) => commit(live.current.plan.map((t) => (t.id === id ? { ...t, name } : t)), { saveSeats: false }),
-      commitName: (id) => {
-        const t = live.current.plan.find((x) => x.id === id);
-        if (t && t.name.trim()) enqueue(() => updateTable(id, { name: t.name.trim() }));
+      rename: (id, name) => {
+        commit(live.current.plan.map((t) => (t.id === id ? { ...t, name } : t)), { saveSeats: false });
+        enqueue(() => updateTable(id, { name }));
       },
       resize: (id, n) => {
         let lost = 0;
@@ -492,6 +573,7 @@ export function SeatingBoard({
       if (suppress) return;
       const t = e.target as Element;
       if (!t.closest(".sp")) return;
+      if (t.closest("input, select, textarea")) return;
       const sel = live.current.selected;
       const tbs = live.current.plan;
       const chip = t.closest<HTMLElement>(".chip");

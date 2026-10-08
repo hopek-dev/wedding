@@ -30,7 +30,11 @@ export async function getRsvpParty(token: string): Promise<RsvpParty | null> {
     .from("guest_rsvps")
     .select("*")
     .in("guest_id", members.map((m) => m.id));
-  const { data: events } = await supabase.from("events").select("*").order("sort_order", { ascending: true });
+  const { data: events } = await supabase
+    .from("events")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
 
   const invitedEventIds = new Set(
     ((rsvps ?? []) as GuestRsvp[]).filter((r) => r.status !== "not_invited").map((r) => r.event_id)

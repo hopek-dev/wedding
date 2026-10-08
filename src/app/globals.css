@@ -158,3 +158,43 @@
     overflow-x: hidden;
   }
 }
+/* Phones: a table with class "stack-table" turns each row into a card, with the
+   column heading shown above each value (from the cell's data-label). Cells
+   with data-span="full" (name, actions) take the whole card width. */
+@media (max-width: 639px) {
+  .stack-table,
+  .stack-table tbody { display: block; width: 100%; }
+  .stack-table thead { display: none; }
+  .stack-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.6rem 1rem;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .stack-table tr:last-child { border-bottom: 0; }
+  .stack-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .stack-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .stack-table td[data-span="full"],
+  .stack-table td[colspan] { grid-column: 1 / -1; }
+}
+
+/* Touch screens: keep every button at a comfortable tap size. */
+@media (pointer: coarse) {
+  [data-slot="button"] { min-height: 2.25rem; min-width: 2.25rem; }
+}

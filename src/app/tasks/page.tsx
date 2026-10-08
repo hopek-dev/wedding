@@ -56,7 +56,7 @@ export default async function TasksPage() {
 
         <TabsContent value="list" className="mt-4 min-w-0">
           <div className="overflow-x-auto rounded-lg border bg-card">
-            <Table>
+            <Table className="stack-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Task</TableHead>
@@ -73,23 +73,23 @@ export default async function TasksPage() {
                   const visualStatus = taskVisualStatus(task);
                   return (
                     <TableRow key={task.id}>
-                      <TableCell className="font-medium">{task.title}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell data-span="full" className="font-medium">{task.title}</TableCell>
+                      <TableCell data-label="Category / Event" className="text-muted-foreground">
                         {task.event_id ? eventNameById.get(task.event_id) : task.category}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(task.start_date)}</TableCell>
-                      <TableCell className={cn(visualStatus === "overdue" && "font-medium text-status-critical")}>
+                      <TableCell data-label="Start" className="text-muted-foreground">{formatDate(task.start_date)}</TableCell>
+                      <TableCell data-label="Due" className={cn(visualStatus === "overdue" && "font-medium text-status-critical")}>
                         {formatDate(task.due_date)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label="Priority">
                         <Badge variant={priorityVariant[task.priority]} className="capitalize">
                           {task.priority}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label="Status">
                         <TaskStatusCell taskId={task.id} status={task.status} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-span="full">
                         <div className="flex items-center gap-1">
                           <TaskFormDialog events={events} task={task} />
                           <DeleteTaskButton taskId={task.id} title={task.title} />

@@ -235,7 +235,7 @@ export function InvitesBoard({
 
       <DeadlineCard deadline={deadline} />
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           ["Not sent", counts.not_sent, "text-foreground"],
           ["Awaiting reply", counts.awaiting, "text-amber-400"],
@@ -349,7 +349,7 @@ export function InvitesBoard({
         </div>
 
         <div className="overflow-x-auto rounded-lg border bg-card">
-          <Table>
+          <Table className="stack-table">
             <TableHeader>
               <TableRow>
                 <TableHead>Guest</TableHead>
@@ -362,7 +362,7 @@ export function InvitesBoard({
             <TableBody>
               {shown.map((r) => (
                 <TableRow key={r.guest.id}>
-                  <TableCell className="font-medium">
+                  <TableCell data-span="full" className="font-medium">
                     {[r.guest.title, guestFullName(r.guest)].filter(Boolean).join(" ")}
                     {r.guest.tag && (
                       <Badge variant="outline" className="ml-2 font-normal">
@@ -380,17 +380,17 @@ export function InvitesBoard({
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="WhatsApp number">
                     {r.phone ? (
                       <span className="tabular-nums">{formatPhone(r.phone)}</span>
                     ) : (
                       <span className="text-destructive">{r.guest.phone ? `Can't read "${r.guest.phone}"` : "Missing"}</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell data-label="Invited to" className="text-muted-foreground">
                     {r.invitedEvents.length ? r.invitedEvents.map((e) => e.name).join(", ") : "None yet"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Status">
                     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", stageStyle[r.stage])}>
                       {r.stage === "responded" && <Check className="size-3" />}
                       {r.stage === "not_sent" && "Not sent"}
@@ -401,7 +401,7 @@ export function InvitesBoard({
                       <div className="mt-0.5 text-xs text-muted-foreground">{formatDate(r.guest.invite_sent_at)}</div>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-span="full">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         size="sm"

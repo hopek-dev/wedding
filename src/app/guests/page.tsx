@@ -42,7 +42,7 @@ export default async function GuestsPage() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1 basis-64">
           <h1 className="font-heading text-2xl font-semibold tracking-tight">Guests</h1>
           <p className="text-sm text-muted-foreground">
             {guests.length} guest{guests.length === 1 ? "" : "s"} on the list. Mark a guest{" "}
@@ -50,7 +50,7 @@ export default async function GuestsPage() {
             event&apos;s per-guest budget costs.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/invitations" />}>
             <Send className="size-4" />
             Send invitations
@@ -61,7 +61,7 @@ export default async function GuestsPage() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-card">
-        <Table>
+        <Table className="stack-table">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -84,7 +84,7 @@ export default async function GuestsPage() {
               const noteHost = !inviter ? guest.notes?.match(/plus[\s-]*one\s+of\s+(.+)/i)?.[1]?.trim() : undefined;
               return (
                 <TableRow key={guest.id}>
-                  <TableCell className="font-medium">
+                  <TableCell data-span="full" className="font-medium">
                     <div>{[guest.title, guestFullName(guest)].filter(Boolean).join(" ")}</div>
                     {guest.tag && (
                       <Badge variant="outline" className="mt-1 mr-1 font-normal">
@@ -112,7 +112,7 @@ export default async function GuestsPage() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell data-label="Contact" className="text-muted-foreground">
                     <div>{guest.email}</div>
                     <div>{guest.phone}</div>
                     {guest.last_emailed_at && (
@@ -120,7 +120,7 @@ export default async function GuestsPage() {
                     )}
                   </TableCell>
                   {events.map((event) => (
-                    <TableCell key={event.id}>
+                    <TableCell data-label={event.name} key={event.id}>
                       <RsvpCell
                         guestId={guest.id}
                         eventId={event.id}
@@ -128,7 +128,7 @@ export default async function GuestsPage() {
                       />
                     </TableCell>
                   ))}
-                  <TableCell>
+                  <TableCell data-span="full">
                     <div className="flex items-center gap-1">
                       <RsvpLinkButton
                         guestId={guest.id}
