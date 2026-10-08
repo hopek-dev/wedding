@@ -27,9 +27,37 @@ export interface Guest {
   email: string | null;
   phone: string | null;
   plus_one_of: string | null;
+  title: string | null;
+  tag: string | null;
+  plus_ones_allowed: number;
+  last_emailed_at: string | null;
+  rsvp_token: string;
+  rsvp_responded_at: string | null;
+  invite_sent_at: string | null;
+  invite_channel: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SeatingTable {
+  id: string;
+  event_id: string;
+  name: string;
+  shape: "round" | "rect";
+  capacity: number;
+  x: number;
+  y: number;
+  created_at: string;
+}
+
+export interface SeatAssignment {
+  id: string;
+  event_id: string;
+  table_id: string;
+  guest_id: string;
+  seat_index: number;
+  created_at: string;
 }
 
 export function guestFullName(guest: Pick<Guest, "first_name" | "last_name">) {
@@ -100,6 +128,8 @@ export interface Database {
       guests: { Row: Guest; Insert: Partial<Guest>; Update: Partial<Guest> };
       guest_rsvps: { Row: GuestRsvp; Insert: Partial<GuestRsvp>; Update: Partial<GuestRsvp> };
       budget_items: { Row: BudgetItem; Insert: Partial<BudgetItem>; Update: Partial<BudgetItem> };
+      seating_tables: { Row: SeatingTable; Insert: Partial<SeatingTable>; Update: Partial<SeatingTable> };
+      seat_assignments: { Row: SeatAssignment; Insert: Partial<SeatAssignment>; Update: Partial<SeatAssignment> };
       tasks: { Row: Task; Insert: Partial<Task>; Update: Partial<Task> };
     };
   };

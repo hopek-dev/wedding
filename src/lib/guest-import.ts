@@ -1,20 +1,44 @@
 export interface ImportedGuest {
+  title?: string;
   first_name: string;
   last_name?: string;
   email?: string;
   phone?: string;
   notes?: string;
+  tag?: string;
+  last_emailed_at?: string;
+  // Number of plus-ones this guest may bring (numeric "Plus Ones" cell).
+  plus_ones_allowed?: number;
+  // Names listed in the "Plus Ones" cell; each becomes a linked guest.
+  plus_one_names?: string[];
+  // Full name of the guest this row is a plus-one of, taken from notes such
+  // as "Plus one of Franco Muzzio".
+  plus_one_of_name?: string;
 }
 
-type Field = "first_name" | "last_name" | "full_name" | "email" | "phone" | "notes";
+type Field =
+  | "title"
+  | "first_name"
+  | "last_name"
+  | "full_name"
+  | "email"
+  | "phone"
+  | "notes"
+  | "tag"
+  | "last_emailed"
+  | "plus_ones";
 
 const ALIASES: Record<Field, string[]> = {
+  title: ["title", "salutation"],
   first_name: ["first name", "firstname", "given name"],
   last_name: ["last name", "lastname", "surname", "family name"],
   full_name: ["full name", "name", "guest name", "guest"],
-  email: ["email", "email address", "e mail"],
+  email: ["email", "email optional", "email address", "e mail"],
   phone: ["phone", "phone number", "mobile", "mobile number", "tel", "telephone"],
   notes: ["notes", "note", "comments", "dietary", "dietary requirements", "dietary notes"],
+  tag: ["tag", "tags", "group", "side", "category"],
+  last_emailed: ["last email", "last emailed", "last email sent", "last contacted"],
+  plus_ones: ["plus ones", "plus one", "plusones", "plus 1", "guests allowed"],
 };
 
 function normalizeHeader(header: string) {
@@ -34,7 +58,24 @@ function buildHeaderMap(headers: string[]) {
 function cell(row: Record<string, unknown>, key: string | undefined) {
   if (!key) return "";
   const value = row[key];
-  return value == null ? "" : String(value).trim();
+  if (value == null) return "";
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? "" : value.toISOString();
+  return String(value).trim();
+}
+
+function toIsoDate(raw: string) {
+  if (!raw) return undefined;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+const PLUS_ONE_OF = /plus[\s-]*one\s+of\s+(.+)/i;
+
+function splitNames(raw: string) {
+  return raw
+    .split(/[,;\n/&]|\band\b/i)
+    .map((n) => n.trim())
+    .filter(Boolean);
 }
 
 export function parseGuestRows(rows: Record<string, unknown>[]) {
@@ -62,12 +103,23 @@ export function parseGuestRows(rows: Record<string, unknown>[]) {
       continue;
     }
 
+    const notes = cell(row, map.notes);
+    const plusOnesRaw = cell(row, map.plus_ones);
+    const plusOnesNumber = /^\d+$/.test(plusOnesRaw) ? Number(plusOnesRaw) : undefined;
+    const plusOneOf = notes.match(PLUS_ONE_OF)?.[1]?.trim();
+
     guests.push({
+      title: cell(row, map.title) || undefined,
       first_name: firstName,
       last_name: lastName || undefined,
       email: cell(row, map.email) || undefined,
       phone: cell(row, map.phone) || undefined,
-      notes: cell(row, map.notes) || undefined,
+      notes: notes || undefined,
+      tag: cell(row, map.tag) || undefined,
+      last_emailed_at: toIsoDate(cell(row, map.last_emailed)),
+      plus_ones_allowed: plusOnesNumber,
+      plus_one_names: plusOnesRaw && plusOnesNumber === undefined ? splitNames(plusOnesRaw) : undefined,
+      plus_one_of_name: plusOneOf,
     });
   }
 

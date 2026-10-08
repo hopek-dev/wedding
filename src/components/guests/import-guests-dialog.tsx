@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { bulkCreateGuests } from "@/app/actions/guests";
+import { bulkCreateGuests, type ImportMode } from "@/app/actions/guests";
 import { parseGuestRows, type ImportedGuest } from "@/lib/guest-import";
 import { FileSpreadsheet } from "lucide-react";
 
@@ -35,11 +35,14 @@ export function ImportGuestsDialog() {
   const [guests, setGuests] = useState<ImportedGuest[]>([]);
   const [skipped, setSkipped] = useState(0);
   const [fileName, setFileName] = useState("");
+  const [mode, setMode] = useState<ImportMode>("skip");
+  const [confirmReplace, setConfirmReplace] = useState(false);
 
   function reset() {
     setGuests([]);
     setSkipped(0);
     setFileName("");
+    setConfirmReplace(false);
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -51,7 +54,7 @@ export function ImportGuestsDialog() {
     try {
       const XLSX = await import("xlsx");
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array" });
+      const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
       const firstSheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[firstSheetName];
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
@@ -78,8 +81,19 @@ export function ImportGuestsDialog() {
   async function handleImport() {
     setImporting(true);
     try {
-      const { inserted } = await bulkCreateGuests(guests);
-      toast.success(`Imported ${inserted} guest${inserted === 1 ? "" : "s"}`);
+      const result = await bulkCreateGuests(guests, mode);
+      if (!result.ok) {
+        toast.error(`Import failed: ${result.error}`);
+        return;
+      }
+      const { inserted, updated, duplicates, linked, removed } = result;
+      toast.success(
+        `Imported ${inserted} guest${inserted === 1 ? "" : "s"}` +
+          (updated ? ` · ${updated} updated` : "") +
+          (removed ? ` · ${removed} old guest${removed === 1 ? "" : "s"} removed` : "") +
+          (linked ? ` · ${linked} plus-one${linked === 1 ? "" : "s"} linked` : "") +
+          (duplicates ? ` · ${duplicates} skipped` : "")
+      );
       setOpen(false);
       reset();
       router.refresh();
@@ -113,6 +127,42 @@ export function ImportGuestsDialog() {
             Column order doesn&apos;t matter and names are matched flexibly. Plus-one links aren&apos;t
             imported — connect those afterward by editing a guest.
           </p>
+          <fieldset className="grid gap-2 rounded-md border p-3 text-sm">
+            <legend className="px-1 text-xs font-medium text-muted-foreground">If a guest is already on the list</legend>
+            <label className="flex items-start gap-2">
+              <input type="radio" name="import-mode" className="mt-1" checked={mode === "skip"} onChange={() => { setMode("skip"); setConfirmReplace(false); }} />
+              <span>
+                <strong>Skip them</strong>
+                <span className="block text-muted-foreground">Keep what&apos;s there and only add new guests.</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input type="radio" name="import-mode" className="mt-1" checked={mode === "override"} onChange={() => { setMode("override"); setConfirmReplace(false); }} />
+              <span>
+                <strong>Override them</strong>
+                <span className="block text-muted-foreground">
+                  Update their details from the sheet. Blank cells never erase existing data, and RSVPs and seating are untouched.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input type="radio" name="import-mode" className="mt-1" checked={mode === "replace"} onChange={() => setMode("replace")} />
+              <span>
+                <strong className="text-destructive">Replace the entire list</strong>
+                <span className="block text-muted-foreground">
+                  Delete every current guest and import only this sheet.
+                </span>
+              </span>
+            </label>
+            {mode === "replace" && (
+              <label className="flex items-start gap-2 rounded-md bg-destructive/10 p-2 text-destructive">
+                <input type="checkbox" className="mt-1" checked={confirmReplace} onChange={(e) => setConfirmReplace(e.target.checked)} />
+                <span>
+                  I understand this permanently deletes all current guests, along with their RSVP responses and seating.
+                </span>
+              </label>
+            )}
+          </fieldset>
           <Input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} disabled={parsing} />
           {parsing && <p className="text-sm text-muted-foreground">Reading {fileName}...</p>}
           {!parsing && guests.length > 0 && (
@@ -125,19 +175,26 @@ export function ImportGuestsDialog() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>First name</TableHead>
-                      <TableHead>Last name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Tag</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Plus-one</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {guests.slice(0, PREVIEW_LIMIT).map((guest, i) => (
                       <TableRow key={i}>
-                        <TableCell>{guest.first_name}</TableCell>
-                        <TableCell className="text-muted-foreground">{guest.last_name}</TableCell>
-                        <TableCell className="text-muted-foreground">{guest.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{guest.phone}</TableCell>
+                        <TableCell>
+                          {[guest.title, guest.first_name, guest.last_name].filter(Boolean).join(" ")}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{guest.tag}</TableCell>
+                        <TableCell className="text-muted-foreground">{guest.email || guest.phone}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {guest.plus_one_of_name
+                            ? `of ${guest.plus_one_of_name}`
+                            : guest.plus_one_names?.join(", ") ||
+                              (guest.plus_ones_allowed ? `${guest.plus_ones_allowed} allowed` : "")}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -152,8 +209,12 @@ export function ImportGuestsDialog() {
           )}
         </div>
         <DialogFooter>
-          <Button onClick={handleImport} disabled={guests.length === 0 || importing}>
-            {importing ? "Importing..." : `Import ${guests.length || ""} guest${guests.length === 1 ? "" : "s"}`}
+          <Button onClick={handleImport} disabled={guests.length === 0 || importing || (mode === "replace" && !confirmReplace)}>
+            {importing
+              ? "Importing..."
+              : mode === "replace"
+                ? `Replace list with ${guests.length || ""} guest${guests.length === 1 ? "" : "s"}`
+                : `Import ${guests.length || ""} guest${guests.length === 1 ? "" : "s"}`}
           </Button>
         </DialogFooter>
       </DialogContent>

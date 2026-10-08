@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Great_Vibes, Playfair_Display } from "next/font/google";
+import { Geist_Mono, Pinyon_Script, Raleway } from "next/font/google";
 import "./globals.css";
-import { Nav } from "@/components/nav";
-import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { AppChrome } from "@/components/app-chrome";
 import { Toaster } from "sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Typography matches the wedding website: a calligraphy script for the
+// couple's names and light, airy Raleway for everything else.
+const raleway = Raleway({
+  variable: "--font-raleway",
+  weight: ["300", "400", "500", "600"],
   subsets: ["latin"],
 });
 
@@ -15,15 +17,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const greatVibes = Great_Vibes({
-  variable: "--font-cursive",
+const pinyonScript = Pinyon_Script({
+  variable: "--font-script",
   weight: "400",
-  subsets: ["latin"],
-});
-
-const playfairDisplay = Playfair_Display({
-  variable: "--font-heading",
-  weight: ["500", "600", "700"],
   subsets: ["latin"],
 });
 
@@ -38,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fb7185",
+  themeColor: "#1b1a13",
   viewportFit: "cover",
 };
 
@@ -46,15 +42,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${greatVibes.variable} ${playfairDisplay.variable} h-full antialiased`}
+      className={`${raleway.variable} ${geistMono.variable} ${pinyonScript.variable} dark h-full antialiased`}
+      style={{ colorScheme: "dark" }}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-muted/30">
-        <Nav />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 sm:px-6 sm:py-8 sm:pb-8">
-          {children}
-        </main>
-        <BottomTabBar />
+        <AppChrome>{children}</AppChrome>
         <Toaster richColors position="top-right" />
       </body>
     </html>

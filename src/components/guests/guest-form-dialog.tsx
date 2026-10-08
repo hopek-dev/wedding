@@ -46,6 +46,9 @@ export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Gu
     try {
       const plusOneOf = formData.get("plus_one_of") as string;
       const input = {
+        title: (formData.get("title") as string) || undefined,
+        tag: (formData.get("tag") as string) || undefined,
+        plus_ones_allowed: Number(formData.get("plus_ones_allowed") || 0),
         first_name: formData.get("first_name") as string,
         last_name: (formData.get("last_name") as string) || undefined,
         email: (formData.get("email") as string) || undefined,
@@ -86,7 +89,11 @@ export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Gu
           <DialogTitle>{isEdit ? "Edit guest" : "Add guest"}</DialogTitle>
         </DialogHeader>
         <form action={handleSubmit} className="grid gap-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[6rem_1fr_1fr]">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" name="title" defaultValue={guest?.title ?? ""} placeholder="Mr" />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="first_name">First name</Label>
               <Input
@@ -109,6 +116,22 @@ export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Gu
             <div className="grid gap-2">
               <Label htmlFor="phone">Phone</Label>
               <Input id="phone" name="phone" defaultValue={guest?.phone ?? ""} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="tag">Tag</Label>
+              <Input id="tag" name="tag" defaultValue={guest?.tag ?? ""} placeholder="Hope, Family, Work..." />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="plus_ones_allowed">Plus-ones allowed</Label>
+              <Input
+                id="plus_ones_allowed"
+                name="plus_ones_allowed"
+                type="number"
+                min={0}
+                defaultValue={guest?.plus_ones_allowed ?? 0}
+              />
             </div>
           </div>
           <div className="grid gap-2">

@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Wedding planning dashboard",
     start_url: "/",
     display: "standalone",
-    background_color: "#fcfcfb",
-    theme_color: "#fb7185",
+    background_color: "#1b1a13",
+    theme_color: "#1b1a13",
     icons: [
       { src: "/icon", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },

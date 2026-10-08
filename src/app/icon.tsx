@@ -3,6 +3,7 @@ import { ImageResponse } from "next/og";
 export const size = { width: 512, height: 512 };
 export const contentType = "image/png";
 
+// Cream tile with the couple's initials in the website's olive tone.
 export default function Icon() {
   return new ImageResponse(
     (
@@ -13,12 +14,11 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background:
-            "linear-gradient(135deg, #fb7185 0%, #fb923c 35%, #fbbf24 60%, #a78bfa 85%, #60a5fa 100%)",
+          background: "#ffffec",
           borderRadius: 96,
         }}
       >
-        <span style={{ fontSize: 280, color: "white", fontFamily: "sans-serif" }}>&#9829;</span>
+        <span style={{ fontSize: 210, color: "#777150", fontFamily: "serif", fontStyle: "italic" }}>V&amp;H</span>
       </div>
     ),
     { ...size }
