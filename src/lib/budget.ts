@@ -28,12 +28,17 @@ export function budgetCategoryOptions(items: BudgetItem[]) {
 // declined for it. This means every newly-added guest counts by default, and
 // "deselecting" a guest for an event is just setting their RSVP status to
 // Declined on the Guests page -- no separate toggle needed.
-export function includedGuestCount(eventId: string, rsvps: GuestRsvp[]) {
-  return rsvps.filter((r) => r.event_id === eventId && r.status !== "declined").length;
+//
+// Counted from the full guest list minus the declined ones, so a guest who has
+// no RSVP record yet for an event (e.g. the event was added after they were)
+// still counts instead of silently dropping out.
+export function includedGuestCount(eventId: string, rsvps: GuestRsvp[], totalGuests: number) {
+  const declined = rsvps.filter((r) => r.event_id === eventId && r.status === "declined").length;
+  return Math.max(0, totalGuests - declined);
 }
 
-export function guestCountsByEvent(eventIds: string[], rsvps: GuestRsvp[]) {
-  return Object.fromEntries(eventIds.map((id) => [id, includedGuestCount(id, rsvps)]));
+export function guestCountsByEvent(eventIds: string[], rsvps: GuestRsvp[], totalGuests: number) {
+  return Object.fromEntries(eventIds.map((id) => [id, includedGuestCount(id, rsvps, totalGuests)]));
 }
 
 // The live estimated cost for a budget item: for a per-guest item linked to

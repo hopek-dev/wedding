@@ -2,7 +2,8 @@
 
 import { Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { createTable, deleteTable, saveEventSeating, updateTable } from "@/app/actions/seating";
+import { createTable, deleteAllTables, deleteTable, saveEventSeating, updateTable } from "@/app/actions/seating";
+import { SEATING_SETUP_SQL } from "@/lib/seating-setup-sql";
 import type { Guest, GuestRsvp, SeatAssignment, SeatingTable, WeddingEvent } from "@/lib/supabase/types";
 import {
   DEFAULT_SEATS,
@@ -294,12 +295,14 @@ export function SeatingBoard({
   rsvps,
   initialTables,
   initialAssignments,
+  setupProblem,
 }: {
   events: WeddingEvent[];
   guests: Guest[];
   rsvps: GuestRsvp[];
   initialTables: SeatingTable[];
   initialAssignments: SeatAssignment[];
+  setupProblem: string | null;
 }) {
   const planGuests = useMemo(() => buildPlanGuests(guests), [guests]);
   const nameOf = useCallback((id: string) => planGuests.get(id)?.name ?? "Guest", [planGuests]);
@@ -314,6 +317,7 @@ export function SeatingBoard({
   const [copyText, setCopyText] = useState<string | null>(null);
   const [trayOpen, setTrayOpen] = useState(true);
   const [showAll, setShowAll] = useState<boolean | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const mainRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -332,12 +336,15 @@ export function SeatingBoard({
   }, []);
 
   // Saves run one after another so a slow request can never overwrite a newer plan.
-  const enqueue = useCallback(
-    (job: () => Promise<unknown>) => {
-      saveChain.current = saveChain.current.then(job).catch(() => toast("Couldn't save your changes. Refresh and try again."));
-    },
-    [toast]
-  );
+  const enqueue = useCallback((job: () => Promise<unknown>) => {
+    saveChain.current = saveChain.current
+      .then(async () => {
+        const result = (await job()) as { ok?: boolean; error?: string } | undefined;
+        if (result && result.ok === false) throw new Error(result.error || "Couldn't save");
+        setSaveError(null);
+      })
+      .catch((err: unknown) => setSaveError(err instanceof Error && err.message ? err.message : "Couldn't save your changes."));
+  }, []);
 
   const commit = useCallback(
     (next: PlanTable[], opts?: { saveSeats?: boolean }) => {
@@ -646,6 +653,35 @@ export function SeatingBoard({
   return (
     <div className={`sp ${fraunces.variable} ${instrumentSans.variable}`}>
       <div className="app">
+        {(setupProblem || saveError) && (
+          <div className="alert" role="alert">
+            <strong>{setupProblem ? "Seating can't be saved yet." : "Your last change didn't save."}</strong>{" "}
+            {/seat_index/.test(setupProblem ?? saveError ?? "")
+              ? "The database is missing the seat position column. Run the SQL below once in the Supabase SQL editor, then reload this page."
+              : (saveError ?? setupProblem)}
+            {/seat_index/.test(setupProblem ?? saveError ?? "") && (
+              <>
+                <pre>{SEATING_SETUP_SQL}</pre>
+                <button
+                  className="btn sm"
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(SEATING_SETUP_SQL).then(() => toast("SQL copied."))}
+                >
+                  Copy SQL
+                </button>
+              </>
+            )}
+            {!setupProblem && saveError && (
+              <button
+                className="btn sm"
+                type="button"
+                onClick={() => enqueue(() => saveEventSeating(live.current.eventId, seatRows(live.current.plan)))}
+              >
+                Try again
+              </button>
+            )}
+          </div>
+        )}
         <header className="bar">
           <div className="title">
             <h1>Guest Seating Plan</h1>
@@ -700,11 +736,22 @@ export function SeatingBoard({
               }}
             />
             <ConfirmButton
-              label="Clear tables"
+              label="Unseat all"
               armedLabel="Unseat everyone?"
               onConfirm={() => {
                 commit(live.current.plan.map((t) => ({ ...t, seats: emptySeats(t.seats.length) })));
                 setSelected(null);
+              }}
+            />
+            <ConfirmButton
+              label="Clear all"
+              armedLabel="Delete all tables?"
+              disabled={plan.length === 0}
+              onConfirm={() => {
+                commit([], { saveSeats: false });
+                enqueue(() => deleteAllTables(live.current.eventId));
+                setSelected(null);
+                toast("All tables and seating cleared for this event.");
               }}
             />
             <button className="btn" type="button" onClick={copy}>

@@ -26,13 +26,13 @@ const statusVariant: Record<BudgetItem["status"], "secondary" | "default" | "out
 };
 
 export default async function BudgetPage() {
-  const [items, events, { rsvps }] = await Promise.all([
+  const [items, events, { guests, rsvps }] = await Promise.all([
     listBudgetItems(),
     listEvents(),
     listGuestsWithRsvps(),
   ]);
   const eventNameById = new Map(events.map((e) => [e.id, e.name]));
-  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps);
+  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps, guests.length);
   const categories = budgetCategoryOptions(items);
 
   const totalEstimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);

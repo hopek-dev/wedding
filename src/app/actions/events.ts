@@ -40,8 +40,17 @@ export async function createEvent(input: {
     const { data: last } = await supabase.from("events").select("sort_order").order("sort_order", { ascending: false }).limit(1);
     sort_order = (last?.[0]?.sort_order ?? 0) + 1;
   }
-  const { error } = await supabase.from("events").insert({ ...input, sort_order });
+  const { data: created, error } = await supabase.from("events").insert({ ...input, sort_order }).select("id").single();
   if (error) throw error;
+
+  // Every existing guest gets a "not invited" record for the new event.
+  const { data: guests } = await supabase.from("guests").select("id");
+  if (guests?.length) {
+    const { error: rsvpError } = await supabase
+      .from("guest_rsvps")
+      .insert(guests.map((g: { id: string }) => ({ guest_id: g.id, event_id: created.id, status: "not_invited" as const })));
+    if (rsvpError) throw rsvpError;
+  }
   revalidatePath("/");
   revalidatePath("/events");
 }

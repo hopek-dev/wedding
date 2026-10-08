@@ -33,11 +33,38 @@ export default async function DashboardPage() {
     ? Math.ceil((new Date(ceremony.starts_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
-  const confirmedCount = rsvps.filter((r) => r.status === "confirmed").length;
-  const invitedCount = rsvps.filter((r) => r.status === "invited").length;
-  const declinedCount = rsvps.filter((r) => r.status === "declined").length;
+  // Each guest counts once, however many events they're invited to:
+  // coming to anything = confirmed; otherwise still waiting on at least one
+  // event = awaiting reply; otherwise declined everything; otherwise not invited.
+  const guestStatus = new Map<string, "confirmed" | "awaiting" | "declined" | "none">();
+  for (const g of guests) {
+    const mine = rsvps.filter((r) => r.guest_id === g.id).map((r) => r.status);
+    guestStatus.set(
+      g.id,
+      mine.includes("confirmed")
+        ? "confirmed"
+        : mine.includes("invited")
+          ? "awaiting"
+          : mine.includes("declined")
+            ? "declined"
+            : "none"
+    );
+  }
+  const countOf = (s: string) => [...guestStatus.values()].filter((v) => v === s).length;
+  const confirmedCount = countOf("confirmed");
+  const awaitingCount = countOf("awaiting");
+  const declinedCount = countOf("declined");
+  const notInvitedCount = countOf("none");
 
-  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps);
+  const eventStats = (eventId: string) => {
+    const rows = rsvps.filter((r) => r.event_id === eventId);
+    return {
+      confirmed: rows.filter((r) => r.status === "confirmed").length,
+      awaiting: rows.filter((r) => r.status === "invited").length,
+    };
+  };
+
+  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps, guests.length);
   const totalEstimated = budgetItems.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
   const totalPaid = budgetItems.reduce((sum, i) => sum + Number(i.amount_paid), 0);
 
@@ -77,6 +104,9 @@ export default async function DashboardPage() {
                   <div className="text-sm text-muted-foreground">
                     {formatDateTime(event.starts_at)}
                   </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {eventStats(event.id).confirmed} confirmed · {eventStats(event.id).awaiting} awaiting reply
+                  </div>
                 </CardContent>
               </Card>
             </Link>
@@ -110,10 +140,11 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent className="grid gap-3">
               <div className="text-2xl font-semibold">{guests.length} on the list</div>
-              <div className="flex gap-4 text-sm text-muted-foreground">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="text-emerald-600 dark:text-emerald-400">{confirmedCount} confirmed</span>
-                <span className="text-amber-600 dark:text-amber-400">{invitedCount} invited</span>
+                <span className="text-amber-600 dark:text-amber-400">{awaitingCount} awaiting reply</span>
                 <span className="text-red-600 dark:text-red-400">{declinedCount} declined</span>
+                {notInvitedCount > 0 && <span>{notInvitedCount} not invited</span>}
               </div>
             </CardContent>
           </Card>

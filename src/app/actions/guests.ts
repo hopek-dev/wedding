@@ -273,6 +273,26 @@ export async function upsertRsvp(input: {
 // Marks every guest who is still "not invited" to an event as invited.
 export async function inviteAllToEvent(eventId: string) {
   const supabase = createServiceClient();
+
+  // Guests added before this event existed have no RSVP record for it, so
+  // create those as invited first; the update below then covers the rest.
+  const [{ data: allGuests, error: guestsError }, { data: haveRows, error: rowsError }] = await Promise.all([
+    supabase.from("guests").select("id"),
+    supabase.from("guest_rsvps").select("guest_id").eq("event_id", eventId),
+  ]);
+  if (guestsError) throw guestsError;
+  if (rowsError) throw rowsError;
+  const have = new Set((haveRows ?? []).map((r: { guest_id: string }) => r.guest_id));
+  const missing = (allGuests ?? []).filter((g: { id: string }) => !have.has(g.id));
+  let created = 0;
+  if (missing.length) {
+    const { error: insertError } = await supabase.from("guest_rsvps").insert(
+      missing.map((g: { id: string }) => ({ guest_id: g.id, event_id: eventId, status: "invited" as const }))
+    );
+    if (insertError) throw insertError;
+    created = missing.length;
+  }
+
   const { data, error } = await supabase
     .from("guest_rsvps")
     .update({ status: "invited", updated_at: new Date().toISOString() })
@@ -283,7 +303,7 @@ export async function inviteAllToEvent(eventId: string) {
   revalidatePath("/");
   revalidatePath("/guests");
   revalidatePath("/seating");
-  return { invited: data?.length ?? 0 };
+  return { invited: (data?.length ?? 0) + created };
 }
 
 export async function markEmailed(guestId: string) {
