@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { submitRsvp, type RsvpParty } from "@/app/actions/rsvp";
-import { formatDateTime } from "@/lib/format";
+import { EventNames } from "@/components/rsvp/event-names";
+import { inviteSummary } from "@/lib/invitation";
 import { daysUntil, formatDeadline } from "@/lib/rsvp-deadline";
 import { WEDDING_SITE_URL } from "@/lib/site";
 import { guestFullName } from "@/lib/supabase/types";
@@ -39,6 +40,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const locked = party.closed;
+  const summary = inviteSummary(party.events);
 
   const invited = (guestId: string, eventId: string) => {
     const r = rsvpOf(guestId, eventId);
@@ -135,53 +137,69 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         )}
       </div>
 
-      {party.events.map((event) => (
-        <section key={event.id} className="rounded-md border bg-card p-6">
-          <h3 className="text-lg font-medium tracking-wide">{event.name}</h3>
-          <div className="mt-1 grid gap-0.5 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <CalendarDays className="size-3.5" /> {formatDateTime(event.starts_at)}
-            </span>
-            {event.venue_name && (
-              <span className="flex items-center gap-1.5">
-                <MapPin className="size-3.5" /> {event.venue_name}
-                {event.address ? `, ${event.address}` : ""}
-              </span>
-            )}
-            {event.dress_code && <span>Dress code: {event.dress_code}</span>}
-          </div>
-          <div className="mt-4 grid gap-3">
-            {party.members
-              .filter((m) => invited(m.id, event.id))
-              .map((m) => {
-                const key = `${m.id}:${event.id}`;
-                return (
-                  <div key={m.id} className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium">{guestFullName(m)}</span>
-                    <div className="flex gap-2">
-                      <ChoiceButton
-                        active={choices[key] === "yes"}
-                        disabled={locked}
-                        tone="yes"
-                        onClick={() => setChoices((c) => ({ ...c, [key]: "yes" }))}
-                      >
-                        <Check className="size-4" /> Accept
-                      </ChoiceButton>
-                      <ChoiceButton
-                        active={choices[key] === "no"}
-                        disabled={locked}
-                        tone="no"
-                        onClick={() => setChoices((c) => ({ ...c, [key]: "no" }))}
-                      >
-                        <X className="size-4" /> Decline
-                      </ChoiceButton>
+      <section className="rounded-md border bg-card p-6 text-center">
+        <div className="grid gap-1.5 text-sm text-muted-foreground">
+          {summary.venues.length > 0 && (
+            <p className="flex items-center justify-center gap-1.5 font-medium text-foreground">
+              <MapPin className="size-4 shrink-0" /> {summary.venues.join(" · ")}
+            </p>
+          )}
+          {summary.dates.length > 0 && (
+            <p className="flex items-center justify-center gap-1.5">
+              <CalendarDays className="size-4 shrink-0" /> {summary.dates.join(" · ")}
+            </p>
+          )}
+        </div>
+        <p className="mt-3 text-base font-medium sm:text-lg sm:tracking-wide">
+          <EventNames names={summary.names} />
+        </p>
+        {summary.dressCodes.length > 0 && (
+          <p className="mt-2 text-sm text-muted-foreground">Dress code: {summary.dressCodes.join(" · ")}</p>
+        )}
+      </section>
+
+      <section className="rounded-md border bg-card p-6">
+        <h3 className="text-lg font-medium tracking-wide">Will you be joining us?</h3>
+        <div className="mt-4 grid gap-5">
+          {party.events.map((event) => {
+            const attendees = party.members.filter((m) => invited(m.id, event.id));
+            // One guest: the event name sits on the answer row itself. A party
+            // gets the event name as a small heading with a row per person.
+            const solo = party.members.length === 1;
+            return (
+              <div key={event.id} className="grid gap-2">
+                {!solo && <div className="text-sm font-medium text-muted-foreground">{event.name}</div>}
+                {attendees.map((m) => {
+                  const key = `${m.id}:${event.id}`;
+                  return (
+                    <div key={m.id} className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-medium">{solo ? event.name : guestFullName(m)}</span>
+                      <div className="flex gap-2">
+                        <ChoiceButton
+                          active={choices[key] === "yes"}
+                          disabled={locked}
+                          tone="yes"
+                          onClick={() => setChoices((c) => ({ ...c, [key]: "yes" }))}
+                        >
+                          <Check className="size-4" /> Accept
+                        </ChoiceButton>
+                        <ChoiceButton
+                          active={choices[key] === "no"}
+                          disabled={locked}
+                          tone="no"
+                          onClick={() => setChoices((c) => ({ ...c, [key]: "no" }))}
+                        >
+                          <X className="size-4" /> Decline
+                        </ChoiceButton>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-          </div>
-        </section>
-      ))}
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       {party.openPlusOneSlots > 0 && !locked && (
         <section className="rounded-md border bg-card p-6">

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { InvitationCard } from "@/components/rsvp/invitation-card";
-import type { InviteEventLine } from "@/lib/invitation";
+import type { InviteSummary } from "@/lib/invitation";
 import "./envelope.css";
 
 type Stage = "closed" | "opening" | "card" | "leaving" | "done";
@@ -12,7 +12,7 @@ type Stage = "closed" | "opening" | "card" | "leaving" | "done";
 export function EnvelopeIntro({
   firstName,
   fullName,
-  events,
+  summary,
   deadline,
   cookieName,
   skip,
@@ -20,7 +20,7 @@ export function EnvelopeIntro({
 }: {
   firstName: string;
   fullName: string;
-  events: InviteEventLine[];
+  summary: InviteSummary;
   deadline: string | null;
   cookieName: string | null; // remembers that this guest has opened it; null = always show (preview)
   skip: boolean;
@@ -89,7 +89,7 @@ export function EnvelopeIntro({
           >
             <div className="env-part env-back" />
             <div className="env-card-wrap">
-              <InvitationCard name={fullName} events={events} deadline={deadline} />
+              <InvitationCard name={fullName} summary={summary} deadline={deadline} />
             </div>
             <div className="env-part env-pocket">
               <i className="l" />

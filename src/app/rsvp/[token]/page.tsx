@@ -4,7 +4,7 @@ import { getInviteeFirstName, getPreviewParty, getRsvpParty } from "@/app/action
 import { EnvelopeIntro } from "@/components/rsvp/envelope-intro";
 import { GuestTheme } from "@/components/rsvp/guest-theme";
 import { RsvpForm } from "@/components/rsvp/rsvp-form";
-import { PREVIEW_TOKEN, invitedName, inviteEventLines } from "@/lib/invitation";
+import { PREVIEW_TOKEN, invitedName, inviteSummary } from "@/lib/invitation";
 import { WeddingSiteCard } from "@/components/rsvp/wedding-site-card";
 import { isAdmin } from "@/lib/require-admin";
 import { formatDeadline } from "@/lib/rsvp-deadline";
@@ -121,7 +121,7 @@ export default async function RsvpPage({
       <EnvelopeIntro
         firstName={party.guest.first_name}
         fullName={invitedName(party.guest)}
-        events={inviteEventLines(party.events)}
+        summary={inviteSummary(party.events)}
         deadline={party.deadline ? formatDeadline(party.deadline) : null}
         cookieName={cookieName}
         skip={opened}
