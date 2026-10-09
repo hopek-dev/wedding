@@ -32,15 +32,6 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   };
 }
 
-// Photo strip, as on the wedding website's welcome page. Replace the files in
-// public/couple/ with the original photos for full quality.
-const strip = [
-  { src: "/couple/hero-1.jpg", grow: "hidden sm:block sm:flex-[0.5]" },
-  { src: "/couple/hero-2.jpg", grow: "flex-[1.5] sm:flex-[1.8]" },
-  { src: "/couple/hero-3.jpg", grow: "flex-[1.5] sm:flex-[1.8]" },
-  { src: "/couple/hero-4.jpg", grow: "hidden sm:block sm:flex-1" },
-];
-
 export default async function RsvpPage({
   params,
   searchParams,
@@ -85,12 +76,17 @@ export default async function RsvpPage({
         </nav>
       </header>
 
-      <div className="flex h-44 gap-[3px] bg-white sm:h-72">
-        {strip.map((p) => (
-          <div key={p.src} className={`relative min-w-0 ${p.grow}`}>
-            <Image src={p.src} alt="" fill sizes="(min-width: 640px) 40vw, 50vw" className="object-cover" priority />
-          </div>
-        ))}
+      {/* One still photo. Replace public/couple/hero.jpg with the original for full quality;
+          the width is capped so a small file isn't stretched into blur on a wide screen. */}
+      <div className="relative mx-auto aspect-[4/3] w-full max-w-[658px] sm:aspect-[3/2]">
+        <Image
+          src="/couple/hero.jpg"
+          alt="Vanessa and Hope"
+          fill
+          priority
+          sizes="(min-width: 658px) 658px, 100vw"
+          className="object-cover object-[center_35%]"
+        />
       </div>
 
       <div className="mx-auto w-full max-w-xl px-4 py-10 pb-16">
