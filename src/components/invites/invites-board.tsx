@@ -332,6 +332,9 @@ export function InvitesBoard({
           >
             Preview the envelope and invitation your guests see
           </a>
+          <a href="/design" className="w-fit text-sm text-primary underline-offset-4 hover:underline">
+            Invitation design board (card at phone and desktop size, colour options)
+          </a>
         </CardContent>
       </Card>
 

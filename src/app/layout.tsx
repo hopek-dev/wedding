@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Pinyon_Script, Raleway, Tinos } from "next/font/google";
+import { Cormorant_Garamond, Geist_Mono, Luxurious_Script, Pinyon_Script, Raleway, Tinos } from "next/font/google";
 import "./globals.css";
 import { AppChrome } from "@/components/app-chrome";
 import { Toaster } from "sonner";
@@ -23,6 +23,16 @@ const tinos = Tinos({
   weight: "400",
   subsets: ["latin"],
 });
+
+// The invitation's printed text: a refined serif in capitals and italics, plus a
+// handwritten script for the "and" and the reply line.
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+});
+const luxurious = Luxurious_Script({ variable: "--font-luxurious", weight: "400", subsets: ["latin"] });
 
 const pinyonScript = Pinyon_Script({
   variable: "--font-script",
@@ -49,7 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${raleway.variable} ${geistMono.variable} ${pinyonScript.variable} ${tinos.variable} dark h-full antialiased`}
+      className={`${raleway.variable} ${geistMono.variable} ${pinyonScript.variable} ${tinos.variable} ${cormorant.variable} ${luxurious.variable} dark h-full antialiased`}
       style={{ colorScheme: "dark" }}
       suppressHydrationWarning
     >

@@ -87,7 +87,7 @@ export function EnvelopeIntro({
           >
             <div className="env-part env-back" />
             <div className="env-card-wrap">
-              <InvitationCard name={firstName} summary={summary} deadline={deadline} />
+              <InvitationCard summary={summary} deadline={deadline} />
             </div>
             <div className="env-part env-pocket">
               <i className="l" />
@@ -105,7 +105,7 @@ export function EnvelopeIntro({
           </div>
           {/* Full-size invitation, shown once the card is out of the envelope. */}
           <div className="inv-reader">
-            <InvitationCard name={firstName} summary={summary} deadline={deadline} />
+            <InvitationCard summary={summary} deadline={deadline} />
           </div>
           <p className="env-hint">Tap to open</p>
           <button type="button" className="env-continue" onClick={proceed}>

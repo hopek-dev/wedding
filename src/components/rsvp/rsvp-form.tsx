@@ -161,7 +161,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         </p>
         {party.deadline && !locked && daysUntil(party.deadline) <= 7 && (
           <p className="mt-2 text-sm font-medium text-foreground">
-            {daysUntil(party.deadline) === 0 ? "Last day to reply!" : `Only ${daysUntil(party.deadline)} day${daysUntil(party.deadline) === 1 ? "" : "s"} left to reply.`}
+            {daysUntil(party.deadline) === 0 ? "Last day to RSVP!" : `Only ${daysUntil(party.deadline)} day${daysUntil(party.deadline) === 1 ? "" : "s"} left to reply.`}
           </p>
         )}
         {locked && party.deadline && (
