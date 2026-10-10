@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Armchair, Home, Send, Landmark, ListTodo, Users, Wallet } from "lucide-react";
+import { Armchair, Gift, Home, Send, Landmark, ListTodo, Users, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -12,6 +12,7 @@ const tabs = [
   { href: "/guests", label: "Guests", icon: Users },
   { href: "/invitations", label: "Invites", icon: Send },
   { href: "/seating", label: "Seats", icon: Armchair },
+  { href: "/registry", label: "Gifts", icon: Gift },
   { href: "/budget", label: "Budget", icon: Wallet },
 ];
 

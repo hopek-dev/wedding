@@ -17,8 +17,8 @@ ragged like paint that has run onto paper, and the open sky above the building s
 dissolves into the paper, so the building itself shapes the top of the picture.
 The result has a transparent background, so it sits on the invitation's paper with no
 box around it. Two files are written: the .webp you name (small, for the card) and a
-compact PNG beside it ending in -og.png (for the WhatsApp preview image, which can't
-read WebP). Tweak the numbers below to taste.
+larger JPEG beside it ending in -og.jpg, laid on the paper colour (for the
+WhatsApp preview image, which can't read WebP and wants crisp detail). Tweak the numbers below to taste.
 """
 
 import sys
@@ -29,7 +29,8 @@ import numpy as np
 SCALE = 2  # work at 2x so edges stay smooth
 ASPECT = 4 / 3  # width / height of the saved painting
 OUT_WIDTH = 1000
-OG_WIDTH = 580
+OG_WIDTH = 1040  # the link-preview copy is bigger, so it stays sharp when the preview image is shrunk
+PAPER_BGR = (217, 230, 233)  # #e9e6d9, the invitation's paper, which the preview copy is laid on
 # Crop window around the building, as fractions of the photo (left, top, width).
 CROP_LEFT, CROP_TOP, CROP_WIDTH = 0.04, 0.04, 0.90
 TRIM_RIGHT = 0.0
@@ -159,9 +160,11 @@ def build(path_in: str, path_out: str, view=None, trim_right: float = TRIM_RIGHT
     rgba = np.dstack([out.astype(np.uint8), (alpha * 255).astype(np.uint8)])
     card = cv2.resize(rgba, (OUT_WIDTH, int(OUT_WIDTH / ASPECT)), interpolation=cv2.INTER_AREA)
     cv2.imwrite(path_out, card, [cv2.IMWRITE_WEBP_QUALITY, 90])
-    og = cv2.resize(rgba, (OG_WIDTH, int(OG_WIDTH / ASPECT)), interpolation=cv2.INTER_AREA)
-    og_path = path_out.rsplit(".", 1)[0] + "-og.png"
-    cv2.imwrite(og_path, og, [cv2.IMWRITE_PNG_COMPRESSION, 9])
+    og = cv2.resize(rgba, (OG_WIDTH, int(OG_WIDTH / ASPECT)), interpolation=cv2.INTER_AREA).astype(np.float32)
+    a = og[..., 3:4] / 255.0
+    og = og[..., :3] * a + np.array(PAPER_BGR, np.float32) * (1 - a)
+    og_path = path_out.rsplit(".", 1)[0] + "-og.jpg"
+    cv2.imwrite(og_path, np.clip(og, 0, 255).astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, 93])
     print(f"Wrote {path_out} and {og_path}")
 
 

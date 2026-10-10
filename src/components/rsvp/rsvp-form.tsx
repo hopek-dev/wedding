@@ -11,6 +11,7 @@ import { EventNames } from "@/components/rsvp/event-names";
 import { inviteSummary } from "@/lib/invitation";
 import { daysUntil, formatDeadline } from "@/lib/rsvp-deadline";
 import { WEDDING_SITE_URL } from "@/lib/site";
+import { STAY_OTHER, STAY_PLACES } from "@/lib/site-content";
 import { guestFullName, type Guest } from "@/lib/supabase/types";
 import { partyFirstNames, partyGreeting } from "@/lib/party";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
   // appear in the reply list below without reloading.
   const [extra, setExtra] = useState<Guest[]>([]);
   const [plusOnes, setPlusOnes] = useState(() => blankSlots(party.openPlusOneSlots));
+  const [accommodation, setAccommodation] = useState(party.guest.accommodation ?? "");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const locked = party.closed;
@@ -108,7 +110,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         .slice(0, openSlots)
         .filter((p) => p.first.trim())
         .map((p) => ({ first_name: p.first.trim(), last_name: p.last.trim() || undefined, dietary_notes: p.diet.trim() || undefined }));
-      const result = await submitRsvp({ token, answers, newPlusOnes });
+      const result = await submitRsvp({ token, answers, accommodation, newPlusOnes });
       if (!result.ok) {
         toast.error(result.error);
         return;
@@ -308,6 +310,37 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="rounded-md border bg-card p-6">
+        <h3 className="text-lg font-medium tracking-wide">Where will you be staying?</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Optional. It helps us plan lifts and the end of the night.{" "}
+          <a href="/places-to-stay" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            See places to stay near the venue
+          </a>
+          .
+        </p>
+        <select
+          disabled={locked}
+          value={accommodation}
+          onChange={(e) => setAccommodation(e.target.value)}
+          aria-label="Where will you be staying?"
+          className="mt-3 h-11 w-full rounded-md border bg-background px-3 text-base disabled:opacity-60"
+        >
+          <option value="">Choose one…</option>
+          {STAY_PLACES.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+              {p.onSite ? " (at the venue)" : ""}
+            </option>
+          ))}
+          {STAY_OTHER.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
       </section>
 
       {!locked && (

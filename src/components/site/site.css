@@ -1,0 +1,42 @@
+/* Styling shared by the public wedding pages. */
+
+/* Gentle fade-and-rise as sections scroll into view. Only hidden when scripting is on,
+   so nothing is lost without it, and skipped for people who prefer less motion. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .reveal.is-in { opacity: 1; transform: none; }
+  .reveal[data-delay="1"] { transition-delay: 0.12s; }
+  .reveal[data-delay="2"] { transition-delay: 0.24s; }
+  .reveal[data-delay="3"] { transition-delay: 0.36s; }
+}
+
+/* Thin rule with a small diamond, used under page headings. */
+.ornament { display: flex; align-items: center; justify-content: center; gap: 0.7rem; color: var(--muted-foreground); }
+.ornament::before, .ornament::after { content: ""; height: 1px; width: 3.5rem; background: currentColor; opacity: 0.45; }
+.ornament i { width: 6px; height: 6px; transform: rotate(45deg); background: currentColor; opacity: 0.7; }
+
+/* Rolling hero: the track holds the photo list twice and slides left by half its width
+   (one list), so the loop has no seam. --loop is set from the strip's width (hero-slideshow.tsx)
+   so the speed is the same on every screen. */
+.hero-tile { aspect-ratio: 3 / 2; } /* landscape */
+.hero-track { animation: hero-roll var(--loop, 50s) linear infinite; will-change: transform; }
+/* Pause under a mouse pointer only. On a touchscreen a tap leaves "hover" stuck on, which would freeze it. */
+@media (hover: hover) { .hero-marquee:hover .hero-track { animation-play-state: paused; } }
+@keyframes hero-roll { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 1.5px)); } }
+@media (prefers-reduced-motion: reduce) { .hero-track { animation: none; } }
+
+/* Drop cap for the first paragraph of the story (tablet and up; on a phone it throws the first lines off). */
+@media (min-width: 640px) {
+.drop-cap::first-letter {
+  float: left;
+  font-family: var(--font-script), cursive;
+  font-size: 4.6rem;
+  line-height: 0.8;
+  padding: 0.35rem 0.6rem 0 0;
+  color: var(--muted-foreground);
+}
+}
+
+details.faq > summary { list-style: none; cursor: pointer; }
+details.faq > summary::-webkit-details-marker { display: none; }
+details.faq[open] .faq-chevron { transform: rotate(180deg); }

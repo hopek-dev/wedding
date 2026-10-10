@@ -35,6 +35,7 @@ export interface Guest {
   rsvp_responded_at: string | null;
   invite_sent_at: string | null;
   invite_channel: string | null;
+  accommodation?: string | null; // migration 0009
   notes: string | null;
   created_at: string;
   updated_at: string;

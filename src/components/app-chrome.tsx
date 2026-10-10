@@ -3,11 +3,16 @@
 import { usePathname } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { SITE_PATHS } from "@/lib/site-content";
 
-// Admin shell (nav + tab bar). The public RSVP pages are what guests see, so
-// they render bare, without any of the planner's navigation.
+// Admin shell (nav + tab bar). The public wedding website and the RSVP pages are what
+// guests see, so they render bare, without any of the planner's navigation.
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  if (SITE_PATHS.includes(pathname as never) && pathname !== "/rsvp") {
+    return <main className="flex-1">{children}</main>;
+  }
+  if (pathname === "/rsvp") return <main className="flex-1">{children}</main>;
   if (pathname.startsWith("/rsvp/") || pathname === "/login") {
     return <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>;
   }

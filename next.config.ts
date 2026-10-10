@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   // The invitation link-preview image reads its fonts and the venue painting from
   // disk at request time, so make sure they're shipped with the deployed function.
   outputFileTracingIncludes: {
-    "/rsvp/[token]/opengraph-image": ["./src/app/rsvp/[token]/fonts/**/*", "./public/couple/venue-watercolor-og.png"],
+    "/rsvp/[token]/opengraph-image": ["./src/app/rsvp/[token]/fonts/**/*", "./public/couple/venue-watercolor-og.jpg"],
   },
 };
 

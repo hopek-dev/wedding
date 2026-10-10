@@ -1,3 +1,4 @@
+import { stayLabel } from "@/lib/site-content";
 import Link from "next/link";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,7 @@ export default async function GuestsPage() {
                   <TableCell data-label="Contact" className="text-muted-foreground">
                     <div>{guest.email}</div>
                     <div>{guest.phone}</div>
+                    {stayLabel(guest.accommodation) && <div className="text-xs">Staying: {stayLabel(guest.accommodation)}</div>}
                     {guest.last_emailed_at && (
                       <div className="text-xs">Emailed {formatDate(guest.last_emailed_at)}</div>
                     )}

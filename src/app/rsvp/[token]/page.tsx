@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getInviteeFirstName, getPreviewParty, getRsvpParty } from "@/app/actions/rsvp";
 import { EnvelopeIntro } from "@/components/rsvp/envelope-intro";
 import { GuestTheme } from "@/components/rsvp/guest-theme";
+import { RememberInvite } from "@/components/site/remember-invite";
 import { RsvpForm } from "@/components/rsvp/rsvp-form";
 import { PREVIEW_TOKEN, inviteSummary } from "@/lib/invitation";
 import { partyFirstNames } from "@/lib/party";
@@ -60,6 +61,7 @@ export default async function RsvpPage({
   const content = (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <GuestTheme />
+      {party && !preview && <RememberInvite token={token} />}
       {preview && (
         <div className="bg-[#3a3a3a] px-4 py-2 text-center text-xs tracking-wide text-[#ffffec]">
           Preview: this is what your guests see. Replies here aren&apos;t saved.

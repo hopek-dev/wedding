@@ -6,6 +6,7 @@ import type { Guest, GuestRsvp, WeddingEvent } from "@/lib/supabase/types";
 import { getRsvpDeadline } from "@/app/actions/settings";
 import { formatDeadline, isRsvpClosed } from "@/lib/rsvp-deadline";
 import { requireAdmin } from "@/lib/require-admin";
+import { STAY_OTHER, STAY_PLACES } from "@/lib/site-content";
 
 export interface RsvpParty {
   guest: Guest;
@@ -143,6 +144,7 @@ function tidyName(raw: string) {
 async function runSubmitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
+  accommodation?: string;
   newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string }>;
 }) {
   const party = await getRsvpParty(input.token);
@@ -229,6 +231,15 @@ async function runSubmitRsvp(input: {
   if (error) throw error;
   await supabase.from("guests").update({ rsvp_responded_at: new Date().toISOString() }).eq("id", party.guest.id);
 
+  // Where the party is staying. Kept separate so a database that hasn't had migration 0009 yet still saves the RSVP.
+  const stay = input.accommodation;
+  if (stay !== undefined && (stay === "" || STAY_PLACES.some((p) => p.id === stay) || STAY_OTHER.some((o) => o.id === stay))) {
+    await supabase
+      .from("guests")
+      .update({ accommodation: stay || null })
+      .in("id", [...memberIds]);
+  }
+
   revalidatePath("/");
   revalidatePath("/guests");
   revalidatePath("/seating");
@@ -242,6 +253,7 @@ export type SubmitRsvpResult = { ok: true; saved: number; added: Guest[] } | { o
 export async function submitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
+  accommodation?: string;
   newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string }>;
 }): Promise<SubmitRsvpResult> {
   try {
