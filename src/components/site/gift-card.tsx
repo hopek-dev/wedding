@@ -5,18 +5,8 @@ import { Check, ExternalLink, Gift, Loader2 } from "lucide-react";
 import { markBought } from "@/app/actions/registry";
 import type { PublicRegistryItem } from "@/lib/registry";
 
-// What this browser has already marked as bought, so the guest sees their own thank-you after a reload.
-// It can't be undone from here: only the couple can remove an entry.
-const KEY = "gift-bought";
+// Remembers only the guest's name, to save retyping it on the next gift.
 const NAME_KEY = "gift-name";
-
-function readBought(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}");
-  } catch {
-    return {};
-  }
-}
 
 const btn = "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[13px] font-medium tracking-wide transition-all";
 const primary = `${btn} bg-primary text-primary-foreground shadow-sm hover:opacity-90`;
@@ -24,7 +14,7 @@ const outline = `${btn} text-foreground ring-1 ring-foreground/25 hover:bg-secon
 
 export function GiftCard({ item }: { item: PublicRegistryItem }) {
   const [remaining, setRemaining] = useState(item.remaining);
-  const [mine, setMine] = useState<string | null>(null); // the name they gave
+  const [thanks, setThanks] = useState<string | null>(null); // the name to thank, while the pop-up is open
   const [asking, setAsking] = useState(false);
   const [name, setName] = useState("");
   const [qty, setQty] = useState(1);
@@ -33,7 +23,6 @@ export function GiftCard({ item }: { item: PublicRegistryItem }) {
 
   useEffect(() => {
     setRemaining(item.remaining);
-    setMine(readBought()[item.id] ?? null);
     try {
       setName(localStorage.getItem(NAME_KEY) ?? "");
     } catch {
@@ -49,17 +38,16 @@ export function GiftCard({ item }: { item: PublicRegistryItem }) {
     if (!r.ok) return setError(r.error);
     const who = name.trim();
     try {
-      localStorage.setItem(KEY, JSON.stringify({ ...readBought(), [item.id]: who }));
       localStorage.setItem(NAME_KEY, who);
     } catch {
-      /* private mode: it is still recorded, the guest just won't see this message after a reload */
+      /* ignore */
     }
-    setMine(who);
+    setThanks(who);
     setRemaining(r.remaining);
     setAsking(false);
   }
 
-  const gone = remaining <= 0 && !mine;
+  const gone = remaining <= 0;
   const store = item.store || "the shop";
 
   return (
@@ -86,12 +74,7 @@ export function GiftCard({ item }: { item: PublicRegistryItem }) {
         {item.note && <p className="mt-3 text-[14px] leading-relaxed font-light text-muted-foreground">{item.note}</p>}
 
         <div className="mt-auto grid gap-2.5 pt-5">
-          {mine ? (
-            <p className="flex items-start gap-2 rounded-md bg-secondary px-4 py-3 text-[14px] leading-relaxed font-light">
-              <Check className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} />
-              <span>Thank you, {mine}! You&rsquo;ve bought this. Vanessa and Hope will love it.</span>
-            </p>
-          ) : asking ? (
+          {asking ? (
             <div className="grid gap-2.5">
               <p className="text-[13px] leading-relaxed font-light text-muted-foreground">Only tap this once you&rsquo;ve bought it. It can&rsquo;t be changed afterwards.</p>
               <input
@@ -127,7 +110,7 @@ export function GiftCard({ item }: { item: PublicRegistryItem }) {
             </div>
           ) : (
             <>
-              {item.url && (
+              {item.url && !gone && (
                 <a href={item.url} target="_blank" rel="noopener noreferrer" className={primary}>
                   Buy at {store} <ExternalLink className="size-4" strokeWidth={1.6} />
                 </a>
@@ -141,6 +124,46 @@ export function GiftCard({ item }: { item: PublicRegistryItem }) {
           )}
         </div>
       </div>
+      {thanks && <ThankYou name={thanks} title={item.title} onClose={() => setThanks(null)} />}
     </article>
+  );
+}
+
+// A one-off lightbox. Closing it (button, backdrop or Escape) leaves the gift showing as bought like it does for everyone.
+function ThankYou({ name, title, onClose }: { name: string; title: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 p-5" onClick={onClose} role="presentation">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Thank you"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm bg-background px-7 py-9 text-center shadow-2xl ring-1 ring-foreground/10"
+      >
+        <span className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-secondary text-muted-foreground ring-1 ring-foreground/10">
+          <Check className="size-5" strokeWidth={1.6} />
+        </span>
+        <p className="text-3xl font-light" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
+          Thank you, {name}!
+        </p>
+        <p className="mt-3 text-[15px] leading-relaxed font-light text-muted-foreground">
+          Vanessa and Hope will love the {title}. We&rsquo;ve marked it as bought.
+        </p>
+        <button type="button" autoFocus onClick={onClose} className="mt-7 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-8 text-sm font-medium tracking-wide text-primary-foreground">
+          Close
+        </button>
+      </div>
+    </div>
   );
 }
