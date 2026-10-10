@@ -24,17 +24,33 @@
   padding: calc(var(--w) * 0.03 * var(--k)) calc(var(--w) * 0.04 * var(--k)) calc(var(--w) * 0.036 * var(--k));
 }
 .inv-frame p, .inv-frame ul { margin: 0; }
-/* V&H monogram in gold, with a thin rule beneath that runs wider than the letters. */
-.inv-frame .inv-mono { margin: calc(var(--w) * 0.006 * var(--k)) 0 calc(var(--w) * 0.018 * var(--k)); }
+/* Small venue sketch with the V&H monogram embossed in its middle: gold lettering
+   with a light edge top-left and a soft shadow bottom-right, so it looks pressed
+   up out of the paper. A paper-coloured glow behind it keeps it clear of the lines. */
+.inv-sketch { position: relative; width: 74%; aspect-ratio: 3 / 2; margin: 0 auto calc(var(--w) * 0.006 * var(--k)); }
+.inv-sketch-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.inv-sketch .inv-mono { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; }
+.inv-sketch .inv-mono::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 50%;
+  height: 62%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, #fffff6 52%, rgba(255, 255, 246, 0) 74%);
+}
 .inv-mono span {
+  position: relative;
   display: inline-block;
   font-family: var(--font-tinos), "Times New Roman", Times, serif;
-  font-size: calc(var(--w) * 0.074 * var(--k));
+  font-size: calc(var(--w) * 0.058 * var(--k));
   line-height: 1;
   letter-spacing: 0.03em;
   color: #b8923a;
-  padding: 0 0.42em 0.24em;
-  border-bottom: 1px solid #b8923a;
+  padding: 0 0.4em 0.22em;
+  border-bottom: 1px solid #c9a95a;
+  text-shadow: -1px -1px 0 rgba(255, 255, 255, 0.95), 1px 1px 1px rgba(120, 88, 14, 0.55);
 }
 .inv-names { font-family: var(--font-script), cursive; font-size: calc(var(--w) * 0.052 * var(--k)); line-height: 1.12; color: #777150; }
 .inv-amp { font-size: calc(var(--w) * 0.018 * var(--k)); color: #a69475; line-height: 1; }
@@ -44,9 +60,8 @@
 .inv-caps { display: grid; gap: calc(var(--w) * 0.006 * var(--k)); }
 .inv-caps p { font-size: calc(var(--w) * 0.0165 * var(--k)); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.75; color: #3d3b2a; }
 .inv-addr { display: block; font-weight: 300; letter-spacing: 0.08em; text-transform: none; color: #8d8569; }
-.inv-script { font-family: var(--font-script), cursive; font-size: calc(var(--w) * 0.036 * var(--k)); line-height: 1.3; color: #777150; }
+.inv-events-line { font-size: calc(var(--w) * 0.0195 * var(--k)); font-weight: 500; font-style: normal; letter-spacing: 0.06em; line-height: 1.5; color: #777150; }
 .inv-reply { font-size: calc(var(--w) * 0.0165 * var(--k)); letter-spacing: 0.08em; color: #777150; }
-.inv-site { font-size: calc(var(--w) * 0.0135 * var(--k)); letter-spacing: 0.04em; font-weight: 300; color: #8d8569; margin-top: calc(var(--w) * 0.004 * var(--k)) !important; }
 
 /* ---------- envelope scene ---------- */
 .env-scene {
@@ -198,7 +213,7 @@
 .env-continue {
   z-index: 30;
   position: absolute;
-  bottom: 9vh;
+  bottom: 4vh;
   left: 50%;
   transform: translateX(-50%) translateY(8px);
   opacity: 0;
@@ -264,12 +279,3 @@
 }
 .is-card .inv-reader { opacity: 1; pointer-events: auto; transition: opacity 0.7s ease 0.3s; }
 .inv-reader .inv-card { --k: 1.6; width: var(--w); flex: none; }
-.inv-photo {
-  position: relative;
-  flex: none;
-  width: var(--w);
-  aspect-ratio: 4 / 3;
-  border-radius: calc(var(--w) * 0.05);
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(80, 70, 30, 0.14);
-}

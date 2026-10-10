@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { createServiceClient } from "@/lib/supabase/server";
 import { PREVIEW_TOKEN } from "@/lib/invitation";
-import { partyFullName } from "@/lib/party";
+import { partyFirstNames } from "@/lib/party";
 
 export const alt = "Your invitation from Vanessa & Hope";
 export const size = { width: 1200, height: 630 };
@@ -32,7 +32,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
         .from("guests")
         .select("title, first_name, last_name")
         .eq("plus_one_of", data.id);
-      name = partyFullName([data, ...(plusOnes ?? [])]);
+      name = partyFirstNames([data, ...(plusOnes ?? [])]);
     }
   }
 

@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { InvitationCard } from "@/components/rsvp/invitation-card";
 import type { InviteSummary } from "@/lib/invitation";
-import { PhotoCard } from "@/components/rsvp/photo-card";
-import { INVITE_PHOTOS } from "@/lib/site";
 import "./envelope.css";
 
 type Stage = "closed" | "opening" | "card" | "leaving" | "done";
@@ -13,7 +11,6 @@ type Stage = "closed" | "opening" | "card" | "leaving" | "done";
 // the envelope falls away, and then the normal RSVP page fades in underneath.
 export function EnvelopeIntro({
   firstName,
-  fullName,
   summary,
   deadline,
   cookieName,
@@ -21,7 +18,6 @@ export function EnvelopeIntro({
   children,
 }: {
   firstName: string;
-  fullName: string;
   summary: InviteSummary;
   deadline: string | null;
   cookieName: string | null; // remembers that this guest has opened it; null = always show (preview)
@@ -91,7 +87,7 @@ export function EnvelopeIntro({
           >
             <div className="env-part env-back" />
             <div className="env-card-wrap">
-              <InvitationCard name={fullName} summary={summary} deadline={deadline} />
+              <InvitationCard name={firstName} summary={summary} deadline={deadline} />
             </div>
             <div className="env-part env-pocket">
               <i className="l" />
@@ -107,12 +103,9 @@ export function EnvelopeIntro({
               V&amp;H
             </div>
           </div>
-          {/* Full-size invitation and the couple's photo, opened once the card is out of the envelope. */}
+          {/* Full-size invitation, shown once the card is out of the envelope. */}
           <div className="inv-reader">
-            <InvitationCard name={fullName} summary={summary} deadline={deadline} />
-            {INVITE_PHOTOS.map((photo) => (
-              <PhotoCard key={photo.src} src={photo.src} alt={photo.alt} />
-            ))}
+            <InvitationCard name={firstName} summary={summary} deadline={deadline} />
           </div>
           <p className="env-hint">Tap to open</p>
           <button type="button" className="env-continue" onClick={proceed}>

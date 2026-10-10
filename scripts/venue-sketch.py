@@ -3,14 +3,15 @@
 Usage (from the project folder):
 
     pip install opencv-python-headless numpy
-    python scripts/venue-sketch.py path/to/venue-photo.jpg public/couple/card-2.jpg
+    python scripts/venue-sketch.py path/to/venue-photo.jpg public/couple/venue-sketch.png
 
 How it works: a pencil "colour dodge" drawing gives the tone, a difference-of-
 gaussians pass gives crisp edges, and the darker of the two is kept. Lines in
 green areas (trees, hedges, lawn) are softened so the building stays the focus,
-and the drawing fades into the paper toward the edges. The result is cropped to
-4:3 to fill the photo card. Tweak the numbers below if a photo needs more or
-less contrast.
+and the drawing fades into the paper toward the edges. The result is a 3:2
+crop saved as a transparent PNG (just the pencil lines), so it sits on the
+invitation's paper with no visible edge. Tweak the numbers below if a photo
+needs more or less contrast.
 """
 
 import sys
@@ -21,8 +22,12 @@ import numpy as np
 PAPER = np.array([246, 255, 255], np.float32)  # #fffff6 (BGR), the card's paper
 INK = np.array([0x2F, 0x4A, 0x4D], np.float32)  # #4d4a2f (BGR), a deep olive pencil
 SCALE = 3  # work at 3x so strokes stay smooth
-FOLIAGE_SOFTEN = 0.74  # 0 = leave trees as drawn, 1 = erase them
-OUT_WIDTH = 1600  # 4:3 output
+FOLIAGE_SOFTEN = 0.86  # 0 = leave trees as drawn, 1 = erase them
+ASPECT = 3 / 2  # width / height of the saved sketch
+OUT_WIDTH = 1000
+# Where to crop, as fractions of the photo: left edge, top edge and width of the
+# window around the building (its height follows from ASPECT).
+CROP_LEFT, CROP_TOP, CROP_WIDTH = 0.16, 0.08, 0.80
 
 
 def levels(x, lo, hi, gamma=1.0):
@@ -59,21 +64,35 @@ def sketch(path_in: str, path_out: str) -> None:
     green = cv2.GaussianBlur(green, (0, 0), 6 * SCALE)
     strength = 1 - FOLIAGE_SOFTEN * green  # 1 on the building, lower in the trees
 
-    # fade out toward the edges, like a sketch on a page
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    d = np.sqrt(((xx - 0.5 * w) / (0.60 * w)) ** 2 + ((yy - 0.54 * h) / (0.64 * h)) ** 2)
-    vignette = np.clip(np.clip(1.15 - d, 0, 1) ** 1.2 * 1.6, 0, 1)
+    ink = (1 - lines / 255.0) * strength  # 0 = paper, 1 = full pencil
+    ink = np.clip(ink * 1.25, 0, 1).astype(np.float32)
+    ink = cv2.dilate(ink, np.ones((3, 3), np.uint8))  # bolder strokes, so they survive being shown small
 
-    ink = (1 - lines / 255.0) * strength * vignette  # 0 = paper, 1 = full pencil
-    ink = np.clip(ink * 1.3, 0, 1)[..., None]
-    out = np.clip(PAPER * (1 - ink) + INK * ink, 0, 255).astype(np.uint8)
+    # crop a window around the building
+    crop_w = int(w * CROP_WIDTH)
+    crop_h = int(crop_w / ASPECT)
+    x0 = min(int(w * CROP_LEFT), w - crop_w)
+    y0 = min(int(h * CROP_TOP), h - crop_h)
+    ink = ink[y0 : y0 + crop_h, x0 : x0 + crop_w]
 
-    # crop to 4:3 around the centre and size for the card
-    crop_w = int(h * 4 / 3)
-    x0 = max(0, (w - crop_w) // 2)
-    out = out[:, x0 : x0 + crop_w]
-    out = cv2.resize(out, (OUT_WIDTH, OUT_WIDTH * 3 // 4), interpolation=cv2.INTER_AREA)
-    cv2.imwrite(path_out, out, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    # fade to nothing at every edge, like a sketch that dissolves into the page
+    ch, cw = ink.shape
+    yy, xx = np.mgrid[0:ch, 0:cw].astype(np.float32)
+    d = np.sqrt(((xx - 0.5 * cw) / (0.5 * cw)) ** 2 + ((yy - 0.5 * ch) / (0.5 * ch)) ** 2)
+    t = np.clip((1.0 - d) / 0.55, 0, 1)
+    ink = ink * (t * t * (3 - 2 * t))
+
+    ink = cv2.resize(ink, (OUT_WIDTH, int(OUT_WIDTH / ASPECT)), interpolation=cv2.INTER_AREA)
+
+    if path_out.lower().endswith(".png"):
+        # transparent background: only the pencil is drawn
+        rgba = np.zeros((*ink.shape, 4), np.uint8)
+        rgba[..., :3] = INK.astype(np.uint8)
+        rgba[..., 3] = np.clip(ink * 255, 0, 255).astype(np.uint8)
+        cv2.imwrite(path_out, rgba)
+    else:
+        t = ink[..., None]
+        cv2.imwrite(path_out, np.clip(PAPER * (1 - t) + INK * t, 0, 255).astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, 90])
     print(f"Wrote {path_out}")
 
 
