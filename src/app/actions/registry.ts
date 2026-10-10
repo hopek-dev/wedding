@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { mirrorImage, storeImage } from "@/lib/image-mirror";
 import { readProduct, type ProductInfo } from "@/lib/product-scrape";
 import { safeHttpUrl, storeFromUrl, type PublicRegistryItem, type RegistryClaim, type RegistryItem } from "@/lib/registry";
 
@@ -54,7 +55,7 @@ export async function addGiftFromLink(link: string): Promise<Result<{ id: string
     const { data: dupe } = await supabase.from("registry_items").select("id,title").eq("url", url).limit(1);
     if (dupe?.length) return { ok: false, error: `"${dupe[0].title}" is already on the registry.` };
     const info = await readProduct(url);
-    const row = clean({ title: info.title || titleFromUrl(url), url, image_url: info.image, price_text: info.price });
+    const row = clean({ title: info.title || titleFromUrl(url), url, image_url: (await mirrorImage(info.image, url)) ?? info.image, price_text: info.price });
     const { data: last } = await supabase.from("registry_items").select("sort_order").order("sort_order", { ascending: false }).limit(1);
     const { data, error } = await supabase.from("registry_items").insert({ ...row, sort_order: (last?.[0]?.sort_order ?? 0) + 1 }).select("id").single();
     if (error) throw error;
@@ -95,9 +96,23 @@ export async function listRegistryAdmin(): Promise<Result<{ items: RegistryItem[
     const supabase = createServiceClient();
     const { data: items, error } = await supabase.from("registry_items").select("*").order("sort_order").order("created_at");
     if (error) throw error;
-    const { data: claims, error: e2 } = await supabase.from("registry_claims").select("id,item_id,guest_name,quantity,created_at").order("created_at");
+    const { data: claims, error: e2 } = await supabase.from("registry_claims").select("*").order("created_at");
     if (e2) throw e2;
     return { ok: true, items: (items ?? []) as RegistryItem[], claims: (claims ?? []) as RegistryClaim[] };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// For shops that won't show us a photo: the planner uploads one from their device.
+export async function uploadRegistryImage(form: FormData): Promise<Result<{ url: string }>> {
+  try {
+    await requireAdmin();
+    const file = form.get("file");
+    if (!(file instanceof File) || !file.type.startsWith("image/")) return { ok: false, error: "Choose a picture file." };
+    if (file.size > 8_000_000) return { ok: false, error: "That picture is too big (8 MB at most)." };
+    const url = await storeImage(Buffer.from(await file.arrayBuffer()));
+    return url ? { ok: true, url } : { ok: false, error: "The picture couldn't be saved." };
   } catch (err) {
     return fail(err);
   }
@@ -109,6 +124,7 @@ export async function saveRegistryItem(id: string | null, input: ItemInput): Pro
     if (!input.title?.trim()) return { ok: false, error: "Give the gift a name." };
     const supabase = createServiceClient();
     const row = clean(input);
+    row.image_url = safeHttpUrl(await mirrorImage(row.image_url, row.url));
     if (id) {
       const { error } = await supabase.from("registry_items").update({ ...row, updated_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
@@ -159,7 +175,7 @@ export async function moveRegistryItem(ids: string[], index: number, direction: 
   }
 }
 
-// The couple can release a reservation (e.g. a guest asked, or bought it elsewhere).
+// Only the couple can remove a "bought" entry (e.g. it was marked by mistake).
 export async function releaseClaim(claimId: string): Promise<Result> {
   try {
     await requireAdmin();
@@ -175,7 +191,7 @@ export async function releaseClaim(claimId: string): Promise<Result> {
 
 // ---- public (guests, no sign-in) ----
 
-// Never includes who reserved anything.
+// Never includes who bought anything.
 export async function getPublicRegistry(): Promise<{ items: PublicRegistryItem[]; ready: boolean }> {
   try {
     const supabase = createServiceClient();
@@ -197,9 +213,11 @@ export async function getPublicRegistry(): Promise<{ items: PublicRegistryItem[]
   }
 }
 
-export type ClaimResult = { ok: true; claimId: string; token: string; remaining: number } | { ok: false; error: string };
+export type BoughtResult = { ok: true; remaining: number } | { ok: false; error: string };
 
-export async function claimGift(input: { itemId: string; name: string; quantity?: number }): Promise<ClaimResult> {
+// A guest says they've bought a gift. There is no reserving and no taking it back: once it's marked,
+// only the couple can remove it (from the planner), so the list stays trustworthy.
+export async function markBought(input: { itemId: string; name: string; quantity?: number }): Promise<BoughtResult> {
   try {
     const name = input.name?.replace(/\s+/g, " ").trim().slice(0, 60);
     if (!name) return { ok: false, error: "Please add your name so Vanessa and Hope know who it's from." };
@@ -210,34 +228,17 @@ export async function claimGift(input: { itemId: string; name: string; quantity?
     if (!item) return { ok: false, error: "That gift wasn't found." };
     const { data: claims } = await supabase.from("registry_claims").select("quantity").eq("item_id", item.id);
     const left = item.quantity - (claims ?? []).reduce((a, c) => a + c.quantity, 0);
-    if (left <= 0) return { ok: false, error: "Someone else has just reserved the last one. Thank you all the same!" };
+    if (left <= 0) return { ok: false, error: "Someone else has just bought the last one. Thank you all the same!" };
     if (quantity > left) return { ok: false, error: `Only ${left} left.` };
-    const token = randomUUID();
-    const { data: row, error } = await supabase
+    const { error } = await supabase
       .from("registry_claims")
-      .insert({ item_id: item.id, guest_name: name, quantity, cancel_token: token })
-      .select("id")
-      .single();
+      .insert({ item_id: item.id, guest_name: name, quantity, cancel_token: randomUUID(), purchased_at: new Date().toISOString() });
     if (error) throw error;
     revalidatePath("/gift-list");
     revalidatePath("/registry");
-    return { ok: true, claimId: row.id, token, remaining: left - quantity };
+    return { ok: true, remaining: left - quantity };
   } catch (err) {
     const f = fail(err);
     return { ok: false, error: f.error };
-  }
-}
-
-export async function undoClaim(claimId: string, token: string): Promise<Result> {
-  try {
-    if (!/^[0-9a-f-]{36}$/i.test(claimId) || !/^[0-9a-f-]{36}$/i.test(token)) return { ok: false, error: "That reservation wasn't found." };
-    const { data, error } = await createServiceClient().from("registry_claims").delete().eq("id", claimId).eq("cancel_token", token).select("id");
-    if (error) throw error;
-    if (!data?.length) return { ok: false, error: "That reservation was already removed." };
-    revalidatePath("/gift-list");
-    revalidatePath("/registry");
-    return { ok: true };
-  } catch (err) {
-    return fail(err);
   }
 }

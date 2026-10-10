@@ -39,7 +39,7 @@ export default async function GiftListPage() {
               Or choose something from our list
             </h2>
             <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed font-light text-muted-foreground">
-              Tap &ldquo;I&rsquo;ll get this&rdquo; to reserve a gift so no one doubles up, then buy it from the shop.
+              Buy a gift from the shop, then tap &ldquo;I&rsquo;ve bought this&rdquo; so no one doubles up.
             </p>
             <div className="ornament mt-5 mb-10" aria-hidden>
               <i />

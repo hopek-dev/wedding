@@ -13,7 +13,7 @@ export interface ProductInfo {
 }
 
 const MAX_BYTES = 2_000_000;
-const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+export const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
 function privateIp(ip: string) {
   if (ip.includes(":")) {
@@ -24,7 +24,7 @@ function privateIp(ip: string) {
   return a === 10 || a === 127 || a === 0 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254) || (a === 100 && b >= 64 && b <= 127);
 }
 
-async function assertPublic(u: URL) {
+export async function assertPublic(u: URL) {
   if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("Only http and https links can be read.");
   const host = u.hostname.replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".local") || host.endsWith(".internal")) throw new Error("That address isn't a public website.");

@@ -10,7 +10,7 @@ export default async function RegistryPage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Gift registry</h1>
         <p className="text-sm text-muted-foreground">
-          Paste a link to anything from any shop. Guests see it on the wedding site&rsquo;s Gift List, reserve it so nobody doubles up, and buy it from the shop. Only you can see who reserved what.
+          Paste a link to anything from any shop. Guests see it on the wedding site&rsquo;s Gift List, buy it from the shop, and tap &ldquo;I&rsquo;ve bought this&rdquo; so nobody doubles up. Once they do, they can&rsquo;t change it. Only you can see who bought what, and you can remove an entry if it was marked by mistake.
         </p>
       </div>
       {res.ok ? (

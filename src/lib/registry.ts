@@ -18,10 +18,11 @@ export interface RegistryClaim {
   item_id: string;
   guest_name: string;
   quantity: number;
+  purchased_at: string | null; // set when the guest says they've bought it (migration 0011)
   created_at: string;
 }
 
-// What guests see: how many are wanted and left, never who reserved them (it keeps the surprise).
+// What guests see: how many are wanted and left, never who bought them (it keeps the surprise).
 export interface PublicRegistryItem extends Omit<RegistryItem, "sort_order" | "created_at"> {
   remaining: number;
 }

@@ -3,11 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ExternalLink, Gift, Link2, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ExternalLink, ImagePlus, Gift, Link2, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { addGiftFromLink, deleteRegistryItem, lookupProduct, moveRegistryItem, releaseClaim, saveRegistryItem } from "@/app/actions/registry";
+import { addGiftFromLink, deleteRegistryItem, lookupProduct, moveRegistryItem, releaseClaim, saveRegistryItem, uploadRegistryImage } from "@/app/actions/registry";
 import type { RegistryClaim, RegistryItem } from "@/lib/registry";
 
 interface Draft {
@@ -44,6 +44,7 @@ function ItemForm({ initial, id, onDone, submitLabel }: { initial: Draft; id: st
   const router = useRouter();
   const [d, setD] = useState<Draft>(initial);
   const [looking, setLooking] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hint, setHint] = useState("");
   const set = (k: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD((cur) => ({ ...cur, [k]: e.target.value }));
@@ -109,6 +110,29 @@ function ItemForm({ initial, id, onDone, submitLabel }: { initial: Draft; id: st
       <Field label="Note for guests (optional)">
         <Textarea rows={2} value={d.note} onChange={set("note")} placeholder="Any colour is fine" />
       </Field>
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm hover:bg-secondary">
+          {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} Upload a photo
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              setUploading(true);
+              const fd = new FormData();
+              fd.set("file", file);
+              const r = await uploadRegistryImage(fd);
+              setUploading(false);
+              if (!r.ok) return toast.error(r.error);
+              setD((cur) => ({ ...cur, image_url: r.url }));
+            }}
+          />
+        </label>
+        <span className="text-xs text-muted-foreground">Use this when a shop won&rsquo;t show its photo: save the picture from the shop, then upload it.</span>
+      </div>
       {d.image_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={d.image_url} alt="" referrerPolicy="no-referrer" className="h-24 w-24 rounded-md border object-contain" />
@@ -237,7 +261,7 @@ export function RegistryManager({ items, claims }: { items: RegistryItem[]; clai
                       {it.price_text && <span className="text-sm text-muted-foreground">{it.price_text}</span>}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {it.store || "No shop"} · {taken} of {it.quantity} reserved
+                      {it.store || "No shop"} · {taken} of {it.quantity} bought
                       {it.url && (
                         <>
                           {" · "}
@@ -251,13 +275,14 @@ export function RegistryManager({ items, claims }: { items: RegistryItem[]; clai
                       <ul className="mt-2 flex flex-wrap gap-2">
                         {mine.map((c) => (
                           <li key={c.id} className="inline-flex items-center gap-1 rounded-full bg-secondary py-1 pr-1 pl-3 text-xs">
+                            <Check className="size-3 text-green-500" aria-label="bought" />
                             {c.guest_name}
                             {c.quantity > 1 ? ` ×${c.quantity}` : ""}
                             <button
                               type="button"
-                              aria-label={`Release ${c.guest_name}'s reservation`}
+                              aria-label={`Remove ${c.guest_name}'s purchase`}
                               className="grid size-6 place-items-center rounded-full hover:bg-background"
-                              onClick={() => confirm(`Release ${c.guest_name}'s reservation?`) && run(() => releaseClaim(c.id), "Released.")}
+                              onClick={() => confirm(`Remove ${c.guest_name}'s purchase from the list? Only do this if it was marked by mistake.`) && run(() => releaseClaim(c.id), "Removed.")}
                             >
                               <X className="size-3" />
                             </button>
