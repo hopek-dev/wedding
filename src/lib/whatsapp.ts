@@ -1,4 +1,5 @@
 import { WEDDING_SITE_URL } from "@/lib/site";
+import { PUBLIC_ORIGIN, hostKind } from "@/lib/hosts";
 
 // Helpers for sending RSVP links over WhatsApp using click-to-chat (wa.me)
 // links. These open WhatsApp with the message pre-filled; the sender taps Send.
@@ -67,9 +68,11 @@ export function renderTemplate(
     .replaceAll("{website}", vars.website ?? WEDDING_SITE_URL);
 }
 
-// The address RSVP links point at. Prefer the configured public URL; otherwise
-// use wherever the app is being viewed from (which only works for guests once deployed).
+// The address RSVP links point at. On the planner or the main website's own address that is always the
+// public website address, so guests never get a planner link. Elsewhere (localhost, a preview) prefer the
+// configured NEXT_PUBLIC_SITE_URL, otherwise wherever the app is being viewed from.
 export function siteOrigin() {
+  if (typeof window !== "undefined" && hostKind(window.location.host) !== "other") return PUBLIC_ORIGIN;
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
   if (configured) return configured;
   return typeof window === "undefined" ? "" : window.location.origin;

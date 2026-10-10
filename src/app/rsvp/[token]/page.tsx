@@ -10,11 +10,13 @@ import { partyFirstNames } from "@/lib/party";
 import { WeddingSiteCard } from "@/components/rsvp/wedding-site-card";
 import { isAdmin } from "@/lib/require-admin";
 import { formatDeadline } from "@/lib/rsvp-deadline";
+import { headers } from "next/headers";
+import { PUBLIC_ORIGIN, hostKind } from "@/lib/hosts";
 import { WEDDING_SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
 export const viewport = { themeColor: "#ffffec" };
 
@@ -22,6 +24,8 @@ export const viewport = { themeColor: "#ffffec" };
 // the image (opengraph-image.tsx) is an invitation card with their full name.
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  // on our own addresses the preview image is always on the public website address
+  const siteUrl = hostKind((await headers()).get("host")) !== "other" ? PUBLIC_ORIGIN : configuredSiteUrl;
   const first = token === PREVIEW_TOKEN ? "Alex" : await getInviteeFirstName(token);
   const title = first ? `${first}, you're invited · Vanessa & Hope` : "You're invited · Vanessa & Hope";
   const description = "Tap to open your invitation and RSVP to our wedding celebrations.";

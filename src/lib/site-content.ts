@@ -231,7 +231,7 @@ export const GIFTS = {
   message:
     "Your presence is the best gift we could ask for! But if you’re feeling generous, you can contribute towards our honeymoon :)",
   // Where the "contribute" button goes. Until payments are built here, it opens the Joy gift list.
-  fundUrl: process.env.NEXT_PUBLIC_HONEYMOON_FUND_URL?.trim() || `${WEDDING_SITE_URL}/registry`,
+  fundUrl: process.env.NEXT_PUBLIC_HONEYMOON_FUND_URL?.trim() || "https://withjoy.com/vanessa-and-hope/registry",
 };
 
 // The Q & A page. The RSVP deadline answer is filled in from the planner's deadline setting

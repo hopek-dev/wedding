@@ -1,8 +1,8 @@
-// The couple's main wedding website (schedule, travel, places to stay, Q&A and
-// the gift list live there). Override with NEXT_PUBLIC_WEDDING_SITE_URL.
-export const WEDDING_SITE_URL = (
-  process.env.NEXT_PUBLIC_WEDDING_SITE_URL?.trim() || "https://withjoy.com/vanessa-and-hope"
-).replace(/\/$/, "");
+import { PUBLIC_ORIGIN } from "@/lib/hosts";
+
+// The couple's main wedding website (schedule, travel, places to stay, Q&A and the gift list live
+// there). It is this app's public address (src/lib/hosts.ts). Override with NEXT_PUBLIC_WEDDING_SITE_URL.
+export const WEDDING_SITE_URL = (process.env.NEXT_PUBLIC_WEDDING_SITE_URL?.trim() || PUBLIC_ORIGIN).replace(/\/$/, "");
 
 // The couple's full names as printed on the invitation card.
 export const COUPLE_FULL_NAMES = ["Vanessa L Haughton", "Hope K Tettey"] as const;
