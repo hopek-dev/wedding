@@ -125,10 +125,25 @@ export interface RsvpAnswer {
   dietary_notes?: string;
 }
 
+// Tidies a name typed on a phone: "tina" becomes "Tina", "TINA" becomes "Tina". Names with
+// mixed capitals ("McDonald") and small connecting words ("de", "van") are left as typed.
+const LOWER_WORDS = new Set(["de", "da", "di", "van", "von", "der", "den", "la", "le", "bin", "al"]);
+function tidyName(raw: string) {
+  return raw
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((w, i) => {
+      if (LOWER_WORDS.has(w.toLowerCase()) && i > 0) return w.toLowerCase();
+      return w === w.toLowerCase() || w === w.toUpperCase() ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w;
+    })
+    .join(" ");
+}
+
 async function runSubmitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
-  newPlusOnes?: Array<{ first_name: string; last_name?: string }>;
+  newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string }>;
 }) {
   const party = await getRsvpParty(input.token);
   if (!party) throw new Error("This RSVP link is no longer valid.");
@@ -145,13 +160,19 @@ async function runSubmitRsvp(input: {
   let answers = input.answers;
   const added: Guest[] = [];
   const wanted = (input.newPlusOnes ?? [])
-    .map((p) => ({ first_name: p.first_name.trim().slice(0, 60), last_name: p.last_name?.trim().slice(0, 60) || null }))
+    .map((p) => ({ first_name: tidyName(p.first_name).slice(0, 60), last_name: p.last_name ? tidyName(p.last_name).slice(0, 60) : null, dietary: p.dietary_notes?.trim().slice(0, 500) || null }))
     .filter((p) => p.first_name)
+    // never add someone who is already in this party (a double tap, or a second submit)
+    .filter(
+      (p, i, all) =>
+        !party.members.some((m) => m.first_name.toLowerCase() === p.first_name.toLowerCase() && (m.last_name ?? "").toLowerCase() === (p.last_name ?? "").toLowerCase()) &&
+        all.findIndex((q) => q.first_name.toLowerCase() === p.first_name.toLowerCase() && (q.last_name ?? "").toLowerCase() === (p.last_name ?? "").toLowerCase()) === i
+    )
     .slice(0, party.openPlusOneSlots);
   if (wanted.length) {
     const { data: created, error } = await supabase
       .from("guests")
-      .insert(wanted.map((p) => ({ ...p, plus_one_of: party.guest.id, tag: party.guest.tag })))
+      .insert(wanted.map((p) => ({ first_name: p.first_name, last_name: p.last_name, plus_one_of: party.guest.id, tag: party.guest.tag })))
       .select("*");
     if (error) throw error;
     const { data: allEvents } = await supabase.from("events").select("id");
@@ -174,7 +195,13 @@ async function runSubmitRsvp(input: {
         ...answers,
         ...input.answers
           .filter((a) => a.guest_id === party.guest.id)
-          .map((a) => ({ guest_id: g.id, event_id: a.event_id, attending: a.attending })),
+          .map((a) => ({
+            guest_id: g.id,
+            event_id: a.event_id,
+            attending: a.attending,
+            // what the guest wrote for this plus-one when they named them
+            dietary_notes: wanted.find((w) => w.first_name.toLowerCase() === g.first_name.toLowerCase() && (w.last_name ?? "").toLowerCase() === (g.last_name ?? "").toLowerCase())?.dietary ?? undefined,
+          })),
       ];
     }
   }
@@ -215,7 +242,7 @@ export type SubmitRsvpResult = { ok: true; saved: number; added: Guest[] } | { o
 export async function submitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
-  newPlusOnes?: Array<{ first_name: string; last_name?: string }>;
+  newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string }>;
 }): Promise<SubmitRsvpResult> {
   try {
     return { ok: true, ...(await runSubmitRsvp(input)) };

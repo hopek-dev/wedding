@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 type Choice = "yes" | "no" | undefined;
 
-const blankSlots = (n: number) => Array.from({ length: Math.max(0, n) }, () => ({ first: "", last: "" }));
+const blankSlots = (n: number) => Array.from({ length: Math.max(0, n) }, () => ({ first: "", last: "", diet: "" }));
 
 export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; token: string; preview?: boolean }) {
   const rsvpOf = (guestId: string, eventId: string) =>
@@ -47,11 +47,14 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
   const [done, setDone] = useState(false);
   const locked = party.closed;
   const summary = inviteSummary(party.events);
-  const members = [...party.members, ...extra];
-  const openSlots = Math.max(0, party.openPlusOneSlots - extra.length);
+  // A plus-one added on this page is shown straight away, but once the page refreshes with the saved
+  // data they are already in party.members, so only the ones not yet there are added on top.
+  const pending = extra.filter((g) => !party.members.some((m) => m.id === g.id));
+  const members = [...party.members, ...pending];
+  const openSlots = Math.max(0, party.openPlusOneSlots - pending.length);
 
   const invited = (guestId: string, eventId: string) => {
-    const r = rsvpOf(extra.some((g) => g.id === guestId) ? party.guest.id : guestId, eventId);
+    const r = rsvpOf(pending.some((g) => g.id === guestId) ? party.guest.id : guestId, eventId);
     return !!r && r.status !== "not_invited";
   };
 
@@ -81,8 +84,11 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       const pretend = plusOnes
         .slice(0, openSlots)
         .filter((p) => p.first.trim())
-        .map((p, i) => ({ ...party.guest, id: `preview-added-${extra.length + i}`, first_name: p.first.trim(), last_name: p.last.trim() || null, plus_one_of: party.guest.id }));
-      if (pretend.length) addPlusOnes(pretend);
+        .map((p, i) => ({ ...party.guest, id: `preview-added-${pending.length + i}`, first_name: p.first.trim(), last_name: p.last.trim() || null, plus_one_of: party.guest.id, diet: p.diet.trim() }));
+      if (pretend.length) {
+        setDietary((d) => ({ ...d, ...Object.fromEntries(pretend.filter((g) => g.diet).map((g) => [g.id, g.diet])) }));
+        addPlusOnes(pretend);
+      }
       setDone(true);
       return;
     }
@@ -101,13 +107,25 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       const newPlusOnes = plusOnes
         .slice(0, openSlots)
         .filter((p) => p.first.trim())
-        .map((p) => ({ first_name: p.first.trim(), last_name: p.last.trim() || undefined }));
+        .map((p) => ({ first_name: p.first.trim(), last_name: p.last.trim() || undefined, dietary_notes: p.diet.trim() || undefined }));
       const result = await submitRsvp({ token, answers, newPlusOnes });
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
-      if (result.added.length) addPlusOnes(result.added);
+      if (result.added.length) {
+        // keep what was typed for each new plus-one, so it shows in their dietary box and isn't lost on a re-send
+        const same = (a: string, b: string | null | undefined) => a.toLowerCase() === (b ?? "").toLowerCase();
+        setDietary((d) => {
+          const next = { ...d };
+          for (const g of result.added) {
+            const typed = newPlusOnes.find((t) => same(t.first_name, g.first_name) && same(t.last_name ?? "", g.last_name));
+            if (typed?.dietary_notes) next[g.id] = typed.dietary_notes;
+          }
+          return next;
+        });
+        addPlusOnes(result.added);
+      }
       setDone(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -257,6 +275,17 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
                   aria-label={openSlots === 1 ? "Plus-one last name" : `Guest ${i + 1} last name`}
                   onChange={(e) => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, last: e.target.value } : x)))}
                 />
+                {/* Once they have a name, they can also say what they can't eat. */}
+                {p.first.trim() && (
+                  <Textarea
+                    className="col-span-2"
+                    rows={2}
+                    value={p.diet}
+                    placeholder={`Dietary requirements for ${p.first.trim()} (optional)`}
+                    aria-label={`Dietary requirements for ${p.first.trim()}`}
+                    onChange={(e) => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)))}
+                  />
+                )}
               </div>
             ))}
           </div>
