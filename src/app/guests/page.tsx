@@ -19,6 +19,7 @@ import { RsvpLinkButton } from "@/components/guests/rsvp-link-button";
 import { DeleteGuestButton } from "@/components/guests/delete-guest-button";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/format";
+import { partyFirstNames, totalUnnamed } from "@/lib/party";
 import { guestFullName, type RsvpStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +46,11 @@ export default async function GuestsPage() {
         <div className="min-w-0 flex-1 basis-64">
           <h1 className="font-heading text-2xl font-semibold tracking-tight">Guests</h1>
           <p className="text-sm text-muted-foreground">
-            {guests.length} guest{guests.length === 1 ? "" : "s"} on the list. Mark a guest{" "}
+            {guests.length + totalUnnamed(guests)} guest{guests.length + totalUnnamed(guests) === 1 ? "" : "s"} expected
+            {totalUnnamed(guests) > 0
+              ? ` (${guests.length} named, ${totalUnnamed(guests)} +1${totalUnnamed(guests) === 1 ? "" : "s"} not named yet)`
+              : ""}
+            . Mark a guest{" "}
             <span className="text-status-critical">Declined</span> for an event to exclude them from that
             event&apos;s per-guest budget costs.
           </p>
@@ -106,9 +111,9 @@ export default async function GuestsPage() {
                         +1 {guestFullName(p)}
                       </Badge>
                     ))}
-                    {plusOnes.length === 0 && guest.plus_ones_allowed > 0 && (
+                    {guest.plus_ones_allowed - plusOnes.length > 0 && (
                       <Badge variant="outline" className="mt-1 font-normal text-muted-foreground">
-                        +{guest.plus_ones_allowed} allowed
+                        +{guest.plus_ones_allowed - plusOnes.length} not named yet
                       </Badge>
                     )}
                   </TableCell>
@@ -130,14 +135,17 @@ export default async function GuestsPage() {
                   ))}
                   <TableCell data-span="full">
                     <div className="flex items-center gap-1">
+                      {/* A plus-one shares their host's invitation, so only the host gets a link to send. */}
+                      {!guest.plus_one_of && (
                       <RsvpLinkButton
                         guestId={guest.id}
                         token={guest.rsvp_token}
-                        firstName={guest.first_name}
+                        firstName={partyFirstNames([guest, ...plusOnes])}
                         email={guest.email}
                         phone={guest.phone}
                         responded={!!guest.rsvp_responded_at}
                       />
+                      )}
                       <GuestFormDialog guests={guests} guest={guest} />
                       <DeleteGuestButton guestId={guest.id} guestName={guestFullName(guest)} />
                     </div>

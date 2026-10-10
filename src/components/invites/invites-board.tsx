@@ -16,6 +16,7 @@ import { markInviteSent } from "@/app/actions/invites";
 import { DeadlineCard } from "@/components/invites/deadline-card";
 import { formatDeadline } from "@/lib/rsvp-deadline";
 import { formatDate } from "@/lib/format";
+import { partyFirstNames, partyFullName, totalUnnamed } from "@/lib/party";
 import { guestFullName, type Guest, type GuestRsvp, type WeddingEvent } from "@/lib/supabase/types";
 import {
   DEFAULT_INVITE_TEMPLATE,
@@ -148,6 +149,7 @@ export function InvitesBoard({
   const counts = {
     total: rows.length,
     plusOnes: guests.length - rows.length,
+    unnamed: totalUnnamed(guests),
     not_sent: rows.filter((r) => r.stage === "not_sent").length,
     awaiting: rows.filter((r) => r.stage === "awaiting").length,
     responded: rows.filter((r) => r.stage === "responded").length,
@@ -169,8 +171,9 @@ export function InvitesBoard({
   function messageFor(r: Row) {
     const template = r.stage === "awaiting" ? templates.reminder : templates.invite;
     return renderTemplate(template, {
-      first_name: r.guest.first_name,
-      full_name: guestFullName(r.guest),
+      // One invitation covers the guest and their plus-one(s), so the message is addressed to them all.
+      first_name: partyFirstNames([r.guest, ...r.plusOnes]),
+      full_name: partyFullName([r.guest, ...r.plusOnes]),
       link: rsvpUrl(r.guest.rsvp_token),
       deadline: deadline ? formatDeadline(deadline) : undefined,
     });
@@ -249,6 +252,11 @@ export function InvitesBoard({
               {label === "Invitees" && counts.plusOnes > 0 && (
                 <div className="text-xs text-muted-foreground">
                   +{counts.plusOnes} plus-one{counts.plusOnes === 1 ? "" : "s"} on their host&apos;s link
+                </div>
+              )}
+              {label === "Invitees" && counts.unnamed > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  {counts.unnamed} more +1{counts.unnamed === 1 ? "" : "s"} to be named by guests
                 </div>
               )}
             </CardContent>
@@ -374,9 +382,9 @@ export function InvitesBoard({
                         +1 {guestFullName(p)}
                       </Badge>
                     ))}
-                    {r.plusOnes.length === 0 && r.guest.plus_ones_allowed > 0 && (
+                    {r.guest.plus_ones_allowed - r.plusOnes.length > 0 && (
                       <Badge variant="outline" className="mt-1 block font-normal text-muted-foreground">
-                        +{r.guest.plus_ones_allowed} allowed
+                        +{r.guest.plus_ones_allowed - r.plusOnes.length} not named yet
                       </Badge>
                     )}
                   </TableCell>
@@ -450,7 +458,7 @@ export function InvitesBoard({
           {current ? (
             <div className="grid gap-3">
               <div>
-                <div className="text-lg font-medium">{guestFullName(current.guest)}</div>
+                <div className="text-lg font-medium">{partyFullName([current.guest, ...current.plusOnes])}</div>
                 <div className="text-sm text-muted-foreground tabular-nums">{current.phone && formatPhone(current.phone)}</div>
               </div>
               {/* The card WhatsApp shows under the link, generated with this guest's name. */}

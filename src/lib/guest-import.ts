@@ -9,8 +9,9 @@ export interface ImportedGuest {
   last_emailed_at?: string;
   // Number of plus-ones this guest may bring (numeric "Plus Ones" cell).
   plus_ones_allowed?: number;
-  // Names listed in the "Plus Ones" cell; each becomes a linked guest.
-  plus_one_names?: string[];
+  // Known plus-ones (from the "Plus 1 First/Last Name" columns, or names typed
+  // in the "Plus Ones" cell). Each becomes a guest linked to this one.
+  plus_one_people?: Array<{ first_name: string; last_name?: string }>;
   // Full name of the guest this row is a plus-one of, taken from notes such
   // as "Plus one of Franco Muzzio".
   plus_one_of_name?: string;
@@ -26,7 +27,9 @@ type Field =
   | "notes"
   | "tag"
   | "last_emailed"
-  | "plus_ones";
+  | "plus_ones"
+  | "plus1_first"
+  | "plus1_last";
 
 const ALIASES: Record<Field, string[]> = {
   title: ["title", "salutation"],
@@ -39,6 +42,8 @@ const ALIASES: Record<Field, string[]> = {
   tag: ["tag", "tags", "group", "side", "category"],
   last_emailed: ["last email", "last emailed", "last email sent", "last contacted"],
   plus_ones: ["plus ones", "plus one", "plusones", "plus 1", "guests allowed"],
+  plus1_first: ["plus 1 first name", "plus one first name", "plus1 first name", "plus 1 firstname", "partner first name", "guest first name"],
+  plus1_last: ["plus 1 last name", "plus one last name", "plus1 last name", "plus 1 lastname", "partner last name", "guest last name", "plus 1 surname"],
 };
 
 function normalizeHeader(header: string) {
@@ -78,6 +83,11 @@ function splitNames(raw: string) {
     .filter(Boolean);
 }
 
+function toPerson(full: string) {
+  const [first, ...rest] = full.split(/\s+/).filter(Boolean);
+  return { first_name: first ?? full, last_name: rest.join(" ") || undefined };
+}
+
 export function parseGuestRows(rows: Record<string, unknown>[]) {
   if (rows.length === 0) return { guests: [] as ImportedGuest[], skipped: 0, matchedName: false };
 
@@ -108,6 +118,14 @@ export function parseGuestRows(rows: Record<string, unknown>[]) {
     const plusOnesNumber = /^\d+$/.test(plusOnesRaw) ? Number(plusOnesRaw) : undefined;
     const plusOneOf = notes.match(PLUS_ONE_OF)?.[1]?.trim();
 
+    // A plus-one is "known" when the sheet names them, either in the two Plus 1
+    // columns or as text in the Plus Ones cell. A bare number means a plus-one
+    // is allowed but not named yet (the guest adds them on their RSVP).
+    const people: Array<{ first_name: string; last_name?: string }> = [];
+    const p1First = cell(row, map.plus1_first);
+    if (p1First) people.push({ first_name: p1First, last_name: cell(row, map.plus1_last) || undefined });
+    if (plusOnesRaw && plusOnesNumber === undefined) people.push(...splitNames(plusOnesRaw).map(toPerson));
+
     guests.push({
       title: cell(row, map.title) || undefined,
       first_name: firstName,
@@ -117,8 +135,8 @@ export function parseGuestRows(rows: Record<string, unknown>[]) {
       notes: notes || undefined,
       tag: cell(row, map.tag) || undefined,
       last_emailed_at: toIsoDate(cell(row, map.last_emailed)),
-      plus_ones_allowed: plusOnesNumber,
-      plus_one_names: plusOnesRaw && plusOnesNumber === undefined ? splitNames(plusOnesRaw) : undefined,
+      plus_ones_allowed: plusOnesNumber ?? (people.length || undefined),
+      plus_one_people: people.length ? people : undefined,
       plus_one_of_name: plusOneOf,
     });
   }

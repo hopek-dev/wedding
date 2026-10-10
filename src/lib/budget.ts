@@ -1,4 +1,5 @@
-import type { BudgetItem, GuestRsvp } from "@/lib/supabase/types";
+import type { BudgetItem, Guest, GuestRsvp } from "@/lib/supabase/types";
+import { unnamedPlusOnes } from "@/lib/party";
 
 export const DEFAULT_BUDGET_CATEGORIES = [
   "Venue",
@@ -32,13 +33,19 @@ export function budgetCategoryOptions(items: BudgetItem[]) {
 // Counted from the full guest list minus the declined ones, so a guest who has
 // no RSVP record yet for an event (e.g. the event was added after they were)
 // still counts instead of silently dropping out.
-export function includedGuestCount(eventId: string, rsvps: GuestRsvp[], totalGuests: number) {
-  const declined = rsvps.filter((r) => r.event_id === eventId && r.status === "declined").length;
-  return Math.max(0, totalGuests - declined);
+//
+// Plus-ones who are allowed but not named yet count too (they'll be at the
+// event even though their name isn't known), unless their host has declined.
+export function includedGuestCount(eventId: string, rsvps: GuestRsvp[], guests: Guest[]) {
+  const declined = new Set(rsvps.filter((r) => r.event_id === eventId && r.status === "declined").map((r) => r.guest_id));
+  const named = guests.filter((g) => !declined.has(g.id)).length;
+  let unnamed = 0;
+  for (const [hostId, n] of unnamedPlusOnes(guests)) if (!declined.has(hostId)) unnamed += n;
+  return named + unnamed;
 }
 
-export function guestCountsByEvent(eventIds: string[], rsvps: GuestRsvp[], totalGuests: number) {
-  return Object.fromEntries(eventIds.map((id) => [id, includedGuestCount(id, rsvps, totalGuests)]));
+export function guestCountsByEvent(eventIds: string[], rsvps: GuestRsvp[], guests: Guest[]) {
+  return Object.fromEntries(eventIds.map((id) => [id, includedGuestCount(id, rsvps, guests)]));
 }
 
 // The live estimated cost for a budget item: for a per-guest item linked to

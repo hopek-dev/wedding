@@ -62,11 +62,6 @@ export async function createGuest(input: {
 const nameKey = (first: string, last?: string | null) =>
   [first, last].filter(Boolean).join(" ").trim().toLowerCase().replace(/\s+/g, " ");
 
-function splitName(full: string) {
-  const [first, ...rest] = full.split(" ").filter(Boolean);
-  return { first_name: first ?? full, last_name: rest.join(" ") || undefined };
-}
-
 // How an upload treats guests that are already on the list (matched by full name):
 //  - skip:     keep them untouched and only add new guests.
 //  - override: update them with whatever the sheet provides (blank cells never
@@ -83,15 +78,20 @@ async function runBulkImport(guests: ImportedGuest[], mode: ImportMode) {
   const supabase = createServiceClient();
   const { data: existing, error: existingError } = await supabase
     .from("guests")
-    .select("id, first_name, last_name");
+    .select("id, first_name, last_name, plus_one_of");
   if (existingError) throw existingError;
 
-  type NameRow = { id: string; first_name: string; last_name: string | null };
+  type NameRow = { id: string; first_name: string; last_name: string | null; plus_one_of?: string | null };
   // Replace mode starts from a blank list. The old guests are only deleted at
   // the very end, so a failed import leaves the current list intact.
   const oldIds = mode === "replace" ? ((existing ?? []) as NameRow[]).map((g) => g.id) : [];
   const idByName = new Map<string, string>(
     mode === "replace" ? [] : ((existing ?? []) as NameRow[]).map((g) => [nameKey(g.first_name, g.last_name), g.id])
+  );
+
+  // Who is already someone's plus-one, so an existing plus-one is linked, not duplicated.
+  const plusOneOfById = new Map<string, string | null>(
+    ((existing ?? []) as NameRow[]).map((g) => [g.id, g.plus_one_of ?? null])
   );
 
   const fresh: ImportedGuest[] = [];
@@ -124,7 +124,7 @@ async function runBulkImport(guests: ImportedGuest[], mode: ImportMode) {
         notes: g.notes,
         tag: g.tag,
         last_emailed_at: g.last_emailed_at,
-        plus_ones_allowed: g.plus_ones_allowed ?? (g.plus_one_names?.length || undefined),
+        plus_ones_allowed: g.plus_ones_allowed ?? (g.plus_one_people?.length || undefined),
       }).filter(([, v]) => v !== undefined)
     );
     if (Object.keys(patch).length === 0) continue;
@@ -146,7 +146,7 @@ async function runBulkImport(guests: ImportedGuest[], mode: ImportMode) {
       notes: g.notes,
       tag: g.tag,
       last_emailed_at: g.last_emailed_at,
-      plus_ones_allowed: g.plus_ones_allowed ?? g.plus_one_names?.length ?? 0,
+      plus_ones_allowed: g.plus_ones_allowed ?? g.plus_one_people?.length ?? 0,
     }));
     const { data: inserted, error } = await supabase.from("guests").insert(rows).select("id, first_name, last_name");
     if (error) throw error;
@@ -156,16 +156,28 @@ async function runBulkImport(guests: ImportedGuest[], mode: ImportMode) {
     }
   }
 
-  // Plus-ones named in the "Plus Ones" cell become their own linked guests.
+  // Known plus-ones become guests linked to their host, so the pair is invited
+  // together on one RSVP link. A plus-one who is already on the list (from an
+  // earlier import, say) is linked instead of being duplicated.
   const processed = [...fresh, ...existingRows.map((r) => r.g)];
   const plusOneRows: Array<{ first_name: string; last_name?: string; plus_one_of: string; tag?: string }> = [];
+  const relinks: Array<{ id: string; host: string }> = [];
   for (const g of processed) {
     const hostId = idByName.get(nameKey(g.first_name, g.last_name));
-    for (const name of g.plus_one_names ?? []) {
-      const parts = splitName(name);
-      if (idByName.has(nameKey(parts.first_name, parts.last_name)) || !hostId) continue;
-      plusOneRows.push({ ...parts, plus_one_of: hostId, tag: g.tag });
+    if (!hostId) continue;
+    for (const person of g.plus_one_people ?? []) {
+      const existingId = idByName.get(nameKey(person.first_name, person.last_name));
+      if (existingId === undefined) {
+        plusOneRows.push({ first_name: person.first_name, last_name: person.last_name, plus_one_of: hostId, tag: g.tag });
+      } else if (existingId !== hostId && !plusOneOfById.get(existingId)) {
+        relinks.push({ id: existingId, host: hostId });
+        plusOneOfById.set(existingId, hostId);
+      }
     }
+  }
+  for (const r of relinks) {
+    const { error: relinkError } = await supabase.from("guests").update({ plus_one_of: r.host }).eq("id", r.id);
+    if (relinkError) throw relinkError;
   }
   if (plusOneRows.length) {
     const { data: created, error: plusError } = await supabase
@@ -180,7 +192,7 @@ async function runBulkImport(guests: ImportedGuest[], mode: ImportMode) {
   }
 
   // "Plus one of <name>" notes link the row to an existing or imported guest.
-  let linked = plusOneRows.length;
+  let linked = plusOneRows.length + relinks.length;
   for (const g of processed) {
     if (!g.plus_one_of_name) continue;
     const hostId = idByName.get(g.plus_one_of_name.trim().toLowerCase().replace(/\s+/g, " "));

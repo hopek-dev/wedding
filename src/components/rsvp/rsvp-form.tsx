@@ -11,10 +11,13 @@ import { EventNames } from "@/components/rsvp/event-names";
 import { inviteSummary } from "@/lib/invitation";
 import { daysUntil, formatDeadline } from "@/lib/rsvp-deadline";
 import { WEDDING_SITE_URL } from "@/lib/site";
-import { guestFullName } from "@/lib/supabase/types";
+import { guestFullName, type Guest } from "@/lib/supabase/types";
+import { partyFirstNames, partyGreeting } from "@/lib/party";
 import { cn } from "@/lib/utils";
 
 type Choice = "yes" | "no" | undefined;
+
+const blankSlots = (n: number) => Array.from({ length: Math.max(0, n) }, () => ({ first: "", last: "" }));
 
 export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; token: string; preview?: boolean }) {
   const rsvpOf = (guestId: string, eventId: string) =>
@@ -36,30 +39,56 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       ])
     )
   );
-  const [plusOneName, setPlusOneName] = useState("");
+  // Plus-ones the guest adds on this page. They are saved straight away, so they
+  // appear in the reply list below without reloading.
+  const [extra, setExtra] = useState<Guest[]>([]);
+  const [plusOnes, setPlusOnes] = useState(() => blankSlots(party.openPlusOneSlots));
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const locked = party.closed;
   const summary = inviteSummary(party.events);
+  const members = [...party.members, ...extra];
+  const openSlots = Math.max(0, party.openPlusOneSlots - extra.length);
 
   const invited = (guestId: string, eventId: string) => {
-    const r = rsvpOf(guestId, eventId);
+    const r = rsvpOf(extra.some((g) => g.id === guestId) ? party.guest.id : guestId, eventId);
     return !!r && r.status !== "not_invited";
   };
 
-  const unanswered = party.members.some((m) =>
+  const unanswered = members.some((m) =>
     party.events.some((e) => invited(m.id, e.id) && !choices[`${m.id}:${e.id}`])
   );
+
+  // A plus-one just added here shows in the reply list straight away, and
+  // attends whatever the invitee attends.
+  function addPlusOnes(added: Guest[]) {
+    setExtra((cur) => [...cur, ...added]);
+    setChoices((cur) => {
+      const next = { ...cur };
+      for (const g of added)
+        for (const e of party.events) {
+          const host = cur[`${party.guest.id}:${e.id}`];
+          if (host) next[`${g.id}:${e.id}`] = host;
+        }
+      return next;
+    });
+    setPlusOnes(blankSlots(openSlots - added.length));
+  }
 
   async function handleSubmit() {
     if (preview) {
       toast.info("This is a preview, so replies aren't saved.");
+      const pretend = plusOnes
+        .slice(0, openSlots)
+        .filter((p) => p.first.trim())
+        .map((p, i) => ({ ...party.guest, id: `preview-added-${extra.length + i}`, first_name: p.first.trim(), last_name: p.last.trim() || null, plus_one_of: party.guest.id }));
+      if (pretend.length) addPlusOnes(pretend);
       setDone(true);
       return;
     }
     setSaving(true);
     try {
-      const answers = party.members.flatMap((m) =>
+      const answers = members.flatMap((m) =>
         party.events
           .filter((e) => invited(m.id, e.id) && choices[`${m.id}:${e.id}`])
           .map((e) => ({
@@ -69,11 +98,16 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
             dietary_notes: dietary[m.id],
           }))
       );
-      const result = await submitRsvp({ token, answers, newPlusOneName: plusOneName });
+      const newPlusOnes = plusOnes
+        .slice(0, openSlots)
+        .filter((p) => p.first.trim())
+        .map((p) => ({ first_name: p.first.trim(), last_name: p.last.trim() || undefined }));
+      const result = await submitRsvp({ token, answers, newPlusOnes });
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
+      if (result.added.length) addPlusOnes(result.added);
       setDone(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -87,7 +121,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
     return (
       <div className="rounded-md border bg-card p-8 text-center">
         <PartyPopper className="mx-auto size-8 text-muted-foreground" />
-        <h2 className="mt-3 text-2xl font-light tracking-wide">Thank you, {party.guest.first_name}!</h2>
+        <h2 className="mt-3 text-2xl font-light tracking-wide">Thank you, {partyFirstNames(members)}!</h2>
         <p className="mt-2 text-muted-foreground">
           {anyYes ? "We can't wait to celebrate with you." : "We'll miss you, and thank you for letting us know."}
         </p>
@@ -116,7 +150,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
     <div className="grid gap-5">
       <div className="rounded-md border bg-card p-6 text-center">
         <h2 className="text-2xl font-light tracking-wide">
-          Hello {[party.guest.title, party.guest.first_name].filter(Boolean).join(" ")}
+          Hello {partyGreeting(members)}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {locked
@@ -162,10 +196,10 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         <h3 className="text-lg font-medium tracking-wide">Will you be joining us?</h3>
         <div className="mt-4 grid gap-5">
           {party.events.map((event) => {
-            const attendees = party.members.filter((m) => invited(m.id, event.id));
+            const attendees = members.filter((m) => invited(m.id, event.id));
             // One guest: the event name sits on the answer row itself. A party
             // gets the event name as a small heading with a row per person.
-            const solo = party.members.length === 1;
+            const solo = members.length === 1;
             return (
               <div key={event.id} className="grid gap-2">
                 {!solo && <div className="text-sm font-medium text-muted-foreground">{event.name}</div>}
@@ -201,22 +235,40 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         </div>
       </section>
 
-      {party.openPlusOneSlots > 0 && !locked && (
+      {openSlots > 0 && !locked && (
         <section className="rounded-md border bg-card p-6">
-          <h3 className="text-lg font-medium tracking-wide">Bringing a plus-one?</h3>
+          <h3 className="text-lg font-medium tracking-wide">{openSlots === 1 ? "Bringing a plus-one?" : "Bringing guests?"}</h3>
           <p className="mb-3 text-sm text-muted-foreground">
-            They&apos;ll be added to the same events you&apos;re attending.
+            Add their name and they&apos;ll be included on your invitation, at the same events you&apos;re attending. Leave
+            this blank if you&apos;re coming on your own.
           </p>
-          <Input value={plusOneName} onChange={(e) => setPlusOneName(e.target.value)} placeholder="Their full name" disabled={locked} />
+          <div className="grid gap-3">
+            {plusOnes.slice(0, openSlots).map((p, i) => (
+              <div key={i} className="grid grid-cols-2 gap-2">
+                <Input
+                  value={p.first}
+                  placeholder="First name"
+                  aria-label={openSlots === 1 ? "Plus-one first name" : `Guest ${i + 1} first name`}
+                  onChange={(e) => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, first: e.target.value } : x)))}
+                />
+                <Input
+                  value={p.last}
+                  placeholder="Last name"
+                  aria-label={openSlots === 1 ? "Plus-one last name" : `Guest ${i + 1} last name`}
+                  onChange={(e) => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, last: e.target.value } : x)))}
+                />
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
       <section className="rounded-md border bg-card p-6">
         <h3 className="text-lg font-medium tracking-wide">Dietary requirements</h3>
         <div className="mt-3 grid gap-3">
-          {party.members.map((m) => (
+          {members.map((m) => (
             <div key={m.id} className="grid gap-1.5">
-              {party.members.length > 1 && <span className="text-sm font-medium">{guestFullName(m)}</span>}
+              {members.length > 1 && <span className="text-sm font-medium">{guestFullName(m)}</span>}
               <Textarea
                 rows={2}
                 disabled={locked}

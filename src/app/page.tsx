@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { formatDateTime, formatGBP } from "@/lib/format";
 import { taskVisualStatus } from "@/lib/gantt";
 import { categoryTotals, guestCountsByEvent, resolvedEstimatedCost, totalVariance } from "@/lib/budget";
+import { totalUnnamed } from "@/lib/party";
 import { CategoryBarChart } from "@/components/budget/category-bar-chart";
 import { Landmark, UtensilsCrossed, Ship, MapPin, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -64,7 +65,7 @@ export default async function DashboardPage() {
     };
   };
 
-  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps, guests.length);
+  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps, guests);
   const totalEstimated = budgetItems.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
   const totalPaid = budgetItems.reduce((sum, i) => sum + Number(i.amount_paid), 0);
 
@@ -139,7 +140,14 @@ export default async function DashboardPage() {
               <CardTitle>Guests</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
-              <div className="text-2xl font-semibold">{guests.length} on the list</div>
+              <div>
+                <div className="text-2xl font-semibold">{guests.length + totalUnnamed(guests)} guests</div>
+                {totalUnnamed(guests) > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    incl. {totalUnnamed(guests)} +1{totalUnnamed(guests) === 1 ? "" : "s"} not named yet
+                  </div>
+                )}
+              </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="text-emerald-600 dark:text-emerald-400">{confirmedCount} confirmed</span>
                 <span className="text-amber-600 dark:text-amber-400">{awaitingCount} awaiting reply</span>

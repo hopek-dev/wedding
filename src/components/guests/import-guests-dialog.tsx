@@ -192,8 +192,8 @@ export function ImportGuestsDialog() {
                         <TableCell className="text-muted-foreground">
                           {guest.plus_one_of_name
                             ? `of ${guest.plus_one_of_name}`
-                            : guest.plus_one_names?.join(", ") ||
-                              (guest.plus_ones_allowed ? `${guest.plus_ones_allowed} allowed` : "")}
+                            : guest.plus_one_people?.map((p) => [p.first_name, p.last_name].filter(Boolean).join(" ")).join(", ") ||
+                              (guest.plus_ones_allowed ? `${guest.plus_ones_allowed} +1 (not named)` : "")}
                         </TableCell>
                       </TableRow>
                     ))}

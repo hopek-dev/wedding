@@ -32,7 +32,7 @@ export default async function BudgetPage() {
     listGuestsWithRsvps(),
   ]);
   const eventNameById = new Map(events.map((e) => [e.id, e.name]));
-  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps, guests.length);
+  const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps, guests);
   const categories = budgetCategoryOptions(items);
 
   const totalEstimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);

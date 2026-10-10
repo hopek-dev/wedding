@@ -4,7 +4,8 @@ import { getInviteeFirstName, getPreviewParty, getRsvpParty } from "@/app/action
 import { EnvelopeIntro } from "@/components/rsvp/envelope-intro";
 import { GuestTheme } from "@/components/rsvp/guest-theme";
 import { RsvpForm } from "@/components/rsvp/rsvp-form";
-import { PREVIEW_TOKEN, invitedName, inviteSummary } from "@/lib/invitation";
+import { PREVIEW_TOKEN, inviteSummary } from "@/lib/invitation";
+import { partyFirstNames, partyFullName } from "@/lib/party";
 import { WeddingSiteCard } from "@/components/rsvp/wedding-site-card";
 import { isAdmin } from "@/lib/require-admin";
 import { formatDeadline } from "@/lib/rsvp-deadline";
@@ -37,15 +38,18 @@ export default async function RsvpPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ name?: string }>;
+  searchParams: Promise<{ name?: string; known?: string; open?: string }>;
 }) {
   const { token } = await params;
-  const { name } = await searchParams;
+  const { name, known, open } = await searchParams;
   const preview = token === PREVIEW_TOKEN;
   // The made-up preview guest is for the planner only; to everyone else it is just an unknown link.
   const party = preview
     ? (await isAdmin())
-      ? await getPreviewParty(name?.slice(0, 30) || undefined)
+      ? await getPreviewParty(name?.slice(0, 30) || undefined, {
+          knownPlusOne: known?.slice(0, 30) || undefined,
+          openSlots: Number(open) || 0,
+        })
       : null
     : await getRsvpParty(token);
 
@@ -115,8 +119,8 @@ export default async function RsvpPage({
   return (
     <div className="-mx-4 -my-6 sm:-mx-6 sm:-my-8">
       <EnvelopeIntro
-        firstName={party.guest.first_name}
-        fullName={invitedName(party.guest)}
+        firstName={partyFirstNames(party.members)}
+        fullName={partyFullName(party.members)}
         summary={inviteSummary(party.events)}
         deadline={party.deadline ? formatDeadline(party.deadline) : null}
         cookieName={cookieName}

@@ -55,7 +55,12 @@ export async function getRsvpParty(token: string): Promise<RsvpParty | null> {
 // A made-up invitation for the "Preview" link on the Invitations page, so the
 // envelope and RSVP page can be seen exactly as a guest sees them without
 // touching any real guest. Replies in preview mode are never saved.
-export async function getPreviewParty(firstName = "Alex"): Promise<RsvpParty> {
+// Options let the planner see both cases: a plus-one that is already known
+// (?known=Gladys) and open slots the guest can fill in themselves (?open=1).
+export async function getPreviewParty(
+  firstName = "Alex",
+  options: { knownPlusOne?: string; openSlots?: number } = {}
+): Promise<RsvpParty> {
   await requireAdmin();
   const supabase = createServiceClient();
   const { data: events } = await supabase.from("events").select("*").order("sort_order", { ascending: true });
@@ -81,20 +86,26 @@ export async function getPreviewParty(firstName = "Alex"): Promise<RsvpParty> {
     updated_at: now,
   } satisfies Guest;
   const list = (events ?? []) as WeddingEvent[];
+  const members: Guest[] = [guest];
+  if (options.knownPlusOne) {
+    members.push({ ...guest, id: "preview-plusone", first_name: options.knownPlusOne, plus_one_of: guest.id, rsvp_token: "preview-plusone" });
+  }
   return {
     guest,
-    members: [guest],
+    members,
     events: list,
-    rsvps: list.map((e) => ({
-      id: `preview-${e.id}`,
-      guest_id: guest.id,
-      event_id: e.id,
-      status: "invited" as const,
-      headcount: 1,
-      dietary_notes: null,
-      updated_at: now,
-    })),
-    openPlusOneSlots: 0,
+    rsvps: members.flatMap((m) =>
+      list.map((e) => ({
+        id: `preview-${m.id}-${e.id}`,
+        guest_id: m.id,
+        event_id: e.id,
+        status: "invited" as const,
+        headcount: 1,
+        dietary_notes: null,
+        updated_at: now,
+      }))
+    ),
+    openPlusOneSlots: Math.max(0, Math.min(4, options.openSlots ?? 0)),
     deadline,
     closed: isRsvpClosed(deadline),
   };
@@ -117,7 +128,7 @@ export interface RsvpAnswer {
 async function runSubmitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
-  newPlusOneName?: string;
+  newPlusOnes?: Array<{ first_name: string; last_name?: string }>;
 }) {
   const party = await getRsvpParty(input.token);
   if (!party) throw new Error("This RSVP link is no longer valid.");
@@ -127,37 +138,45 @@ async function runSubmitRsvp(input: {
   }
   const supabase = createServiceClient();
 
-  // A new plus-one name (only if the invitee has an open slot) becomes a
-  // linked guest with RSVP rows mirroring the invitee's invitations.
+  // Plus-ones the guest names themselves (never more than their open slots)
+  // become guests linked to them, invited to the same events, and attend
+  // whatever the invitee attends.
   let members = party.members;
   let answers = input.answers;
-  const plusOneName = input.newPlusOneName?.trim();
-  if (plusOneName && party.openPlusOneSlots > 0) {
-    const [first, ...rest] = plusOneName.split(/\s+/);
+  const added: Guest[] = [];
+  const wanted = (input.newPlusOnes ?? [])
+    .map((p) => ({ first_name: p.first_name.trim().slice(0, 60), last_name: p.last_name?.trim().slice(0, 60) || null }))
+    .filter((p) => p.first_name)
+    .slice(0, party.openPlusOneSlots);
+  if (wanted.length) {
     const { data: created, error } = await supabase
       .from("guests")
-      .insert({ first_name: first, last_name: rest.join(" ") || null, plus_one_of: party.guest.id, tag: party.guest.tag })
-      .select("*")
-      .single();
+      .insert(wanted.map((p) => ({ ...p, plus_one_of: party.guest.id, tag: party.guest.tag })))
+      .select("*");
     if (error) throw error;
     const { data: allEvents } = await supabase.from("events").select("id");
     const invitedTo = new Set(
       party.rsvps.filter((r) => r.guest_id === party.guest.id && r.status !== "not_invited").map((r) => r.event_id)
     );
-    const rows = (allEvents ?? []).map((e: { id: string }) => ({
-      guest_id: created.id,
-      event_id: e.id,
-      status: invitedTo.has(e.id) ? "invited" : "not_invited",
-    }));
+    const newGuests = (created ?? []) as Guest[];
+    const rows = newGuests.flatMap((g) =>
+      (allEvents ?? []).map((e: { id: string }) => ({
+        guest_id: g.id,
+        event_id: e.id,
+        status: invitedTo.has(e.id) ? "invited" : "not_invited",
+      }))
+    );
     if (rows.length) await supabase.from("guest_rsvps").insert(rows);
-    members = [...members, created as Guest];
-    // They attend whatever the invitee attends.
-    answers = [
-      ...answers,
-      ...answers
-        .filter((a) => a.guest_id === party.guest.id)
-        .map((a) => ({ guest_id: created.id, event_id: a.event_id, attending: a.attending })),
-    ];
+    for (const g of newGuests) {
+      added.push(g);
+      members = [...members, g];
+      answers = [
+        ...answers,
+        ...input.answers
+          .filter((a) => a.guest_id === party.guest.id)
+          .map((a) => ({ guest_id: g.id, event_id: a.event_id, attending: a.attending })),
+      ];
+    }
   }
 
   const memberIds = new Set(members.map((m) => m.id));
@@ -186,17 +205,17 @@ async function runSubmitRsvp(input: {
   revalidatePath("/");
   revalidatePath("/guests");
   revalidatePath("/seating");
-  return { saved: rows.length };
+  return { saved: rows.length, added };
 }
 
-export type SubmitRsvpResult = { ok: true; saved: number } | { ok: false; error: string };
+export type SubmitRsvpResult = { ok: true; saved: number; added: Guest[] } | { ok: false; error: string };
 
 // Failures come back as data: server action errors are redacted in
 // production, and guests need to see why (e.g. the deadline has passed).
 export async function submitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
-  newPlusOneName?: string;
+  newPlusOnes?: Array<{ first_name: string; last_name?: string }>;
 }): Promise<SubmitRsvpResult> {
   try {
     return { ok: true, ...(await runSubmitRsvp(input)) };
