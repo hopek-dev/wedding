@@ -1,38 +1,52 @@
-/* Invitation card + envelope intro. All sizes derive from --w so it scales cleanly. */
+/* Invitation card + envelope intro. Sizes derive from --w (card/envelope width) and
+   --k (text scale: 1 in the envelope, larger in the full-size reader). */
 
 .inv-card {
-  position: absolute;
-  inset: 0;
+  --k: 1;
+  position: relative;
   background: #fffff6;
-  border: 1px solid #d9d3a8;
-  box-shadow: 0 1px 3px rgba(80, 70, 30, 0.12);
-  padding: calc(var(--w) * 0.02);
+  border-radius: calc(var(--w) * 0.05);
+  box-shadow: 0 1px 3px rgba(80, 70, 30, 0.14);
+  padding: calc(var(--w) * 0.022);
   color: #3d3b2a;
   font-family: var(--font-raleway), ui-sans-serif, system-ui, sans-serif;
 }
+/* In the envelope only the top of the tall card shows, like a card sliding out of its sleeve. */
+.env-card-wrap .inv-card { position: absolute; inset: 0; overflow: hidden; }
 .inv-frame {
-  height: 100%;
-  border: 1px solid #cfc7a1;
+  border: 1px solid #d9d3a8;
+  border-radius: calc(var(--w) * 0.036);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   text-align: center;
-  gap: calc(var(--w) * 0.008);
-  padding: 0 calc(var(--w) * 0.03);
+  gap: calc(var(--w) * 0.006 * var(--k));
+  padding: calc(var(--w) * 0.03 * var(--k)) calc(var(--w) * 0.04 * var(--k)) calc(var(--w) * 0.036 * var(--k));
 }
 .inv-frame p, .inv-frame ul { margin: 0; }
-.inv-kicker { font-size: calc(var(--w) * 0.019); letter-spacing: 0.32em; text-transform: uppercase; font-weight: 300; color: #8d8569; }
-.inv-names { font-family: var(--font-script), cursive; font-size: calc(var(--w) * 0.105); line-height: 1.05; color: #777150; }
-.inv-line { font-size: calc(var(--w) * 0.0235); font-weight: 300; color: #8d8569; }
-.inv-guest { font-family: var(--font-script), cursive; font-size: calc(var(--w) * 0.072); line-height: 1.15; color: #3d3b2a; }
-.inv-rule { display: block; width: calc(var(--w) * 0.14); height: 1px; background: #a69475; margin: calc(var(--w) * 0.008) 0; }
-.inv-detail { font-size: calc(var(--w) * 0.0215); font-weight: 300; line-height: 1.5; color: #5c5a3f; }
-.inv-detail-names { font-weight: 500; color: #3d3b2a; letter-spacing: 0.04em; }
-.inv-events { list-style: none; padding: 0; font-size: calc(var(--w) * 0.0215); font-weight: 300; line-height: 1.5; color: #5c5a3f; }
-.inv-events strong { font-weight: 500; color: #3d3b2a; }
-.inv-site { font-size: calc(var(--w) * 0.0175); letter-spacing: 0.04em; font-weight: 300; color: #8d8569; margin-top: calc(var(--w) * 0.004) !important; }
-.inv-reply { margin-top: calc(var(--w) * 0.006) !important; font-size: calc(var(--w) * 0.02); letter-spacing: 0.08em; color: #777150; }
+/* V&H monogram in gold, with a thin rule beneath that runs wider than the letters. */
+.inv-frame .inv-mono { margin: calc(var(--w) * 0.006 * var(--k)) 0 calc(var(--w) * 0.018 * var(--k)); }
+.inv-mono span {
+  display: inline-block;
+  font-family: var(--font-tinos), "Times New Roman", Times, serif;
+  font-size: calc(var(--w) * 0.074 * var(--k));
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: #b8923a;
+  padding: 0 0.42em 0.24em;
+  border-bottom: 1px solid #b8923a;
+}
+.inv-names { font-family: var(--font-script), cursive; font-size: calc(var(--w) * 0.052 * var(--k)); line-height: 1.12; color: #777150; }
+.inv-amp { font-size: calc(var(--w) * 0.018 * var(--k)); color: #a69475; line-height: 1; }
+.inv-gap { margin-top: calc(var(--w) * 0.012 * var(--k)) !important; }
+.inv-line { font-size: calc(var(--w) * 0.0205 * var(--k)); font-weight: 300; color: #8d8569; }
+.inv-guest { font-family: var(--font-script), cursive; font-size: calc(var(--w) * 0.05 * var(--k)); line-height: 1.15; color: #3d3b2a; }
+.inv-caps { display: grid; gap: calc(var(--w) * 0.006 * var(--k)); }
+.inv-caps p { font-size: calc(var(--w) * 0.0165 * var(--k)); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.75; color: #3d3b2a; }
+.inv-addr { display: block; font-weight: 300; letter-spacing: 0.08em; text-transform: none; color: #8d8569; }
+.inv-script { font-family: var(--font-script), cursive; font-size: calc(var(--w) * 0.036 * var(--k)); line-height: 1.3; color: #777150; }
+.inv-reply { font-size: calc(var(--w) * 0.0165 * var(--k)); letter-spacing: 0.08em; color: #777150; }
+.inv-site { font-size: calc(var(--w) * 0.0135 * var(--k)); letter-spacing: 0.04em; font-weight: 300; color: #8d8569; margin-top: calc(var(--w) * 0.004 * var(--k)) !important; }
 
 /* ---------- envelope scene ---------- */
 .env-scene {
@@ -79,9 +93,9 @@
   transition: transform 1.05s cubic-bezier(0.3, 0.7, 0.2, 1) 0.6s;
 }
 .is-card .env-card-wrap, .is-leaving .env-card-wrap {
-  z-index: 7;
-  transform: translateY(-17%) scale(1.13);
-  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1), z-index 0s;
+  transform: translateY(-64%);
+  opacity: 0;
+  transition: opacity 0.55s ease;
 }
 
 /* Pocket: three triangles meeting just below the middle. */
@@ -138,22 +152,23 @@
   margin: calc(var(--w) * -0.085) 0 0 calc(var(--w) * -0.085);
   border-radius: 50%;
   border: 0;
-  background: radial-gradient(circle at 35% 30%, #8d8761, #777150 55%, #5f5a3b);
-  color: #ffffec;
-  font-family: var(--font-script), cursive;
-  font-size: calc(var(--w) * 0.062);
+  background: radial-gradient(circle at 35% 30%, #5d563b, #413c28 55%, #2c2919);
+  color: #d2ab57;
+  font-family: var(--font-tinos), "Times New Roman", Times, serif;
+  font-size: calc(var(--w) * 0.05);
+  letter-spacing: 0.03em;
   line-height: 1;
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 calc(var(--w) * 0.006) rgba(255, 255, 236, 0.18), 0 calc(var(--w) * 0.01) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 calc(var(--w) * 0.006) rgba(210, 171, 87, 0.5), 0 calc(var(--w) * 0.01) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.3);
   cursor: pointer;
   transition: transform 0.4s ease, opacity 0.35s ease;
   animation: seal-pulse 2.4s ease-in-out infinite;
 }
 .is-opening .env-seal, .is-card .env-seal, .is-leaving .env-seal { transform: scale(0.6); opacity: 0; animation: none; pointer-events: none; }
 @keyframes seal-pulse {
-  0%, 100% { box-shadow: inset 0 0 0 calc(var(--w) * 0.006) rgba(255, 255, 236, 0.18), 0 calc(var(--w) * 0.01) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(119, 113, 80, 0.45); }
-  50% { box-shadow: inset 0 0 0 calc(var(--w) * 0.006) rgba(255, 255, 236, 0.18), 0 calc(var(--w) * 0.01) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.3), 0 0 0 calc(var(--w) * 0.04) rgba(119, 113, 80, 0); }
+  0%, 100% { box-shadow: inset 0 0 0 calc(var(--w) * 0.006) rgba(210, 171, 87, 0.5), 0 calc(var(--w) * 0.01) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(210, 171, 87, 0.5); }
+  50% { box-shadow: inset 0 0 0 calc(var(--w) * 0.006) rgba(210, 171, 87, 0.5), 0 calc(var(--w) * 0.01) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.3), 0 0 0 calc(var(--w) * 0.04) rgba(210, 171, 87, 0); }
 }
 
 /* Once the card is out, the envelope drops away. */
@@ -181,6 +196,7 @@
 .env-scene:not(.is-closed) .env-hint { opacity: 0; pointer-events: none; }
 
 .env-continue {
+  z-index: 30;
   position: absolute;
   bottom: 9vh;
   left: 50%;
@@ -203,6 +219,7 @@
 .is-leaving .env-continue { opacity: 0; transition-delay: 0s; }
 
 .env-skip {
+  z-index: 30;
   position: absolute;
   top: calc(1rem + env(safe-area-inset-top, 0px));
   right: 1rem;
@@ -213,7 +230,9 @@
   font-size: 0.8125rem;
   font-weight: 300;
   letter-spacing: 0.1em;
-  padding: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 236, 0.88);
   cursor: pointer;
 }
 
@@ -223,4 +242,34 @@
 
 @media (prefers-reduced-motion: reduce) {
   .env-part, .env-card-wrap, .env-flap, .env-seal, .env-scene, .env-page, .env-continue { transition-duration: 0.01s !important; transition-delay: 0s !important; animation: none !important; }
+}
+
+/* ---------- full-size reader: the invitation, then the couple's photo ---------- */
+.inv-reader {
+  --w: min(92vw, 32rem);
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: calc(3.5rem + env(safe-area-inset-top, 0px)) 1rem 9.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.is-card .inv-reader { opacity: 1; pointer-events: auto; transition: opacity 0.7s ease 0.3s; }
+.inv-reader .inv-card { --k: 1.6; width: var(--w); flex: none; }
+.inv-photo {
+  position: relative;
+  flex: none;
+  width: var(--w);
+  aspect-ratio: 4 / 3;
+  border-radius: calc(var(--w) * 0.05);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(80, 70, 30, 0.14);
 }

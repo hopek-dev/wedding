@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Pinyon_Script, Raleway } from "next/font/google";
+import { Geist_Mono, Pinyon_Script, Raleway, Tinos } from "next/font/google";
 import "./globals.css";
 import { AppChrome } from "@/components/app-chrome";
 import { Toaster } from "sonner";
@@ -14,6 +14,13 @@ const raleway = Raleway({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Times-style serif used for the gold V&H monogram on the invitation.
+const tinos = Tinos({
+  variable: "--font-tinos",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -42,7 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${raleway.variable} ${geistMono.variable} ${pinyonScript.variable} dark h-full antialiased`}
+      className={`${raleway.variable} ${geistMono.variable} ${pinyonScript.variable} ${tinos.variable} dark h-full antialiased`}
       style={{ colorScheme: "dark" }}
       suppressHydrationWarning
     >

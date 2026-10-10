@@ -15,7 +15,9 @@ export interface InviteSummary {
   dates: string[];
   venues: string[];
   dressCodes: string[];
+  venueDetails: Array<{ name: string; address: string | null }>;
 }
+
 
 const unique = (values: Array<string | null | undefined>) => [...new Set(values.filter((v): v is string => !!v))];
 
@@ -33,7 +35,7 @@ function formatDay(iso: string | null) {
 }
 
 // Details that haven't been decided yet are left out rather than shown as "TBD".
-function venueLabels(events: WeddingEvent[]) {
+function venueParts(events: WeddingEvent[]) {
   const byName = new Map<string, { venue: string; address: string | null }>();
   for (const e of events) {
     const venue = e.venue_name?.trim();
@@ -44,14 +46,15 @@ function venueLabels(events: WeddingEvent[]) {
     if (!seen) byName.set(key, { venue, address });
     else if (!seen.address && address) seen.address = address;
   }
-  return [...byName.values()].map((v) => [v.venue, v.address].filter(Boolean).join(", "));
+  return [...byName.values()];
 }
 
 export function inviteSummary(events: WeddingEvent[]): InviteSummary {
   return {
     names: events.map((e) => e.name),
     dates: unique(events.map((e) => formatDay(e.starts_at))),
-    venues: venueLabels(events),
+    venues: venueParts(events).map((v) => [v.venue, v.address].filter(Boolean).join(", ")),
     dressCodes: unique(events.map((e) => e.dress_code?.trim())),
+    venueDetails: venueParts(events).map((v) => ({ name: v.venue, address: v.address })),
   };
 }

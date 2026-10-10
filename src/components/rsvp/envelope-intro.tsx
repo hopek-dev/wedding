@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { InvitationCard } from "@/components/rsvp/invitation-card";
 import type { InviteSummary } from "@/lib/invitation";
+import { PhotoCard } from "@/components/rsvp/photo-card";
+import { INVITE_PHOTOS } from "@/lib/site";
 import "./envelope.css";
 
 type Stage = "closed" | "opening" | "card" | "leaving" | "done";
@@ -104,6 +106,13 @@ export function EnvelopeIntro({
             <div className="env-seal" aria-hidden>
               V&amp;H
             </div>
+          </div>
+          {/* Full-size invitation and the couple's photo, opened once the card is out of the envelope. */}
+          <div className="inv-reader">
+            <InvitationCard name={fullName} summary={summary} deadline={deadline} />
+            {INVITE_PHOTOS.map((photo) => (
+              <PhotoCard key={photo.src} src={photo.src} alt={photo.alt} />
+            ))}
           </div>
           <p className="env-hint">Tap to open</p>
           <button type="button" className="env-continue" onClick={proceed}>
