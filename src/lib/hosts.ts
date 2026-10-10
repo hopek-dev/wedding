@@ -21,6 +21,7 @@ export type HostKind = "public" | "planner" | "other";
 export function hostKind(host: string | null | undefined): HostKind {
   const h = (host ?? "").toLowerCase().split(":")[0];
   if (h === PUBLIC_HOST || h === APEX_HOST) return "public";
-  if (h === PLANNER_HOST) return "planner";
+  // Vercel can add "www." to a subdomain (www.planner...) and redirect to it, so that counts as the planner too.
+  if (h === PLANNER_HOST || h === `www.${PLANNER_HOST}`) return "planner";
   return "other";
 }
