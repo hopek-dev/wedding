@@ -20,7 +20,7 @@ const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 export const viewport = { themeColor: "#ffffec" };
 
 // The link preview WhatsApp shows: the title carries the guest's first name and
-// the image (opengraph-image.tsx) is an invitation card with their full name.
+// the image (/invite-card, the same for every guest) is the invitation card.
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   // on our own addresses the preview image is always on the public website address
@@ -32,7 +32,13 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
     metadataBase: siteUrl ? new URL(siteUrl) : undefined,
     title,
     description,
-    openGraph: { title, description, siteName: "Vanessa & Hope", type: "website" },
+    openGraph: {
+      title,
+      description,
+      siteName: "Vanessa & Hope",
+      type: "website",
+      images: [{ url: "/invite-card", width: 1200, height: 630, alt: "Your invitation from Vanessa & Hope" }],
+    },
     robots: { index: false, follow: false },
   };
 }

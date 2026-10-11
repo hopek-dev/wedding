@@ -9,6 +9,8 @@ type Stage = "closed" | "opening" | "card" | "leaving" | "done";
 
 // A sealed envelope the guest taps. The flap opens, the invitation rises out,
 // the envelope falls away, and then the normal RSVP page fades in underneath.
+// The envelope overlay carries data-lenis-prevent: the website's smooth scrolling (Lenis) would otherwise take
+// over the mouse wheel and touch scrolling and the invitation card, which scrolls inside the overlay, would stick.
 export function EnvelopeIntro({
   firstName,
   summary,
@@ -70,7 +72,7 @@ export function EnvelopeIntro({
   return (
     <>
       {stage !== "done" && (
-        <div className={`env-scene is-${stage}`} role="dialog" aria-label="Your invitation">
+        <div data-lenis-prevent className={`env-scene is-${stage}`} role="dialog" aria-label="Your invitation">
           <button type="button" className="env-skip" onClick={proceed}>
             Skip
           </button>

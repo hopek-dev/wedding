@@ -5,9 +5,14 @@ import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
 import { COUPLE_FULL_NAMES } from "@/lib/site";
 
-export const alt = "Your invitation from Vanessa & Hope";
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/jpeg";
+
+// One image for every guest, at one address (/invite-card). It is built once and then served from the edge,
+// so WhatsApp's crawler (which gives up after a few seconds) never waits for it to be drawn. The previous
+// version had a different address per guest, so every guest's first preview was drawn from scratch (about
+// 4 seconds) and often timed out. Rebuilt hourly, so a new invitation painting from the Photos page shows up.
+export const dynamic = "force-static";
+export const revalidate = 3600;
 
 // The picture WhatsApp shows under the link. WhatsApp on a phone shows it wide, above the title. WhatsApp on
 // a computer (and some older phones) shrinks it to a tiny square thumbnail cut from its MIDDLE, built on the
@@ -42,7 +47,7 @@ async function paintingFor(w: number, h: number) {
   return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
 }
 
-export default async function Image() {
+export async function GET() {
   const fontDir = join(process.cwd(), "src", "app", "rsvp", "[token]", "fonts");
   const [script, caps, italic, serif] = await Promise.all([
     readFile(join(fontDir, "LuxuriousScript-Regular.ttf")),
@@ -117,7 +122,7 @@ export default async function Image() {
     const { default: sharp } = await import("sharp");
     const png = Buffer.from(await image.arrayBuffer());
     const jpeg = await sharp(png).resize(1200, 630, { kernel: "lanczos3" }).sharpen({ sigma: 0.6 }).jpeg({ quality: 90, progressive: false, chromaSubsampling: "4:4:4" }).toBuffer();
-    return new Response(new Uint8Array(jpeg), { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=3600" } });
+    return new Response(new Uint8Array(jpeg), { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400" } });
   } catch {
     return image;
   }

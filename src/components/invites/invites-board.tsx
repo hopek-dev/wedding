@@ -467,7 +467,7 @@ export function InvitesBoard({
               {/* The card WhatsApp shows under the link, generated with this guest's name. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`/rsvp/${current.guest.rsvp_token}/opengraph-image`}
+                src="/invite-card"
                 alt={`Invitation card for ${guestFullName(current.guest)}`}
                 className="w-full rounded-md border"
                 style={{ aspectRatio: "1200 / 630" }}
