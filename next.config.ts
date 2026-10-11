@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Photos in public/couple/ get swapped from time to time; a short cache means a
   // replaced photo shows up within a minute instead of hours.
-  images: { minimumCacheTTL: 60 },
+  images: { minimumCacheTTL: 60, qualities: [75, 90] },
   // The invitation link-preview image reads its fonts and the venue painting from
   // disk at request time, so make sure they're shipped with the deployed function.
   outputFileTracingIncludes: {

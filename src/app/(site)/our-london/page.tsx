@@ -1,16 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import { Beef, Drama, Footprints, Heart, Landmark, Laugh, Music, Sparkles, Ticket, Utensils, Wine } from "lucide-react";
-import { PageShell } from "@/components/site/page-shell";
+import { Container, PageShell, SectionTitle } from "@/components/site/page-shell";
 import { LinkedText } from "@/components/site/linked-text";
+import { PhotoBand } from "@/components/site/photo-band";
 import { Reveal } from "@/components/site/reveal";
 import { LONDON } from "@/lib/site-content";
 
 export const metadata = { title: "Our London" };
 
 const serif = { fontFamily: "var(--font-cormorant), Georgia, serif" } as const;
-const tile =
-  "group relative h-full bg-card px-6 py-8 shadow-[0_18px_44px_-30px_rgba(70,62,30,0.45)] ring-1 ring-foreground/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_54px_-28px_rgba(70,62,30,0.55)] sm:px-8";
-const chip = "mb-5 grid size-12 place-items-center rounded-full bg-secondary text-muted-foreground ring-1 ring-foreground/10 transition-colors group-hover:bg-primary group-hover:text-primary-foreground";
 
 const THINGS: Record<string, LucideIcon> = {
   "Visit the theatre": Drama,
@@ -24,9 +22,9 @@ const THINGS: Record<string, LucideIcon> = {
 
 function Title({ name, url }: { name: string; url?: string }) {
   return (
-    <h3 className="text-2xl font-light tracking-[0.08em] uppercase" style={serif}>
+    <h3 className="text-3xl font-light tracking-[0.08em] uppercase" style={serif}>
       {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="underline decoration-foreground/25 underline-offset-[6px] transition-colors hover:decoration-foreground">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block py-2 underline decoration-foreground/25 underline-offset-[7px] transition-colors hover:decoration-foreground">
           {name}
         </a>
       ) : (
@@ -36,16 +34,20 @@ function Title({ name, url }: { name: string; url?: string }) {
   );
 }
 
-function SectionHead({ children, eyebrow }: { children: string; eyebrow: string }) {
+// One place or thing: an icon, a title and a few words, with a hairline above. No box.
+function Entry({ icon: Icon, name, url, text, tag }: { icon: LucideIcon; name: string; url?: string; text?: string; tag?: string }) {
   return (
-    <div className="mb-9 text-center">
-      <p className="text-[12px] font-light tracking-[0.35em] text-muted-foreground uppercase">{eyebrow}</p>
-      <h2 className="mt-3 text-3xl font-light tracking-[0.1em] uppercase sm:text-4xl" style={serif}>
-        {children}
-      </h2>
-      <div className="ornament mt-4" aria-hidden>
-        <i />
+    <div className="h-full border-t border-foreground/15 pt-8 text-center">
+      <Icon className="mx-auto size-7 text-muted-foreground" strokeWidth={1} />
+      {tag && <p className="mt-4 text-[11px] font-light tracking-[0.3em] text-muted-foreground uppercase">{tag}</p>}
+      <div className="mt-4">
+        <Title name={name} url={url} />
       </div>
+      {text && (
+        <p className="mx-auto mt-4 max-w-sm text-[15px] leading-[1.85] font-light text-muted-foreground">
+          <LinkedText text={text} />
+        </p>
+      )}
     </div>
   );
 }
@@ -55,70 +57,35 @@ export default function OurLondonPage() {
     <PageShell
       title="Our London"
       intro={LONDON.intro}
-      wide
-      hero={{ src: "/site/ring.webp", alt: "Their hands together, with an engagement ring", pos: "object-[50%_45%]" }}
+      hero={{ src: "/site/tower-bridge-wide.webp", alt: "Vanessa and Hope in front of Tower Bridge at night", pos: "object-[40%_10%]" }}
     >
-      <div className="grid gap-20">
-        <section>
-          <Reveal>
-            <SectionHead eyebrow="Eat & drink">{LONDON.favouriteBars.heading}</SectionHead>
-          </Reveal>
-          <ul className="grid gap-6 sm:grid-cols-2">
-            {LONDON.favouriteBars.items.map((it, i) => {
-              const first = it.name === "Swift";
-              const Icon = first ? Heart : i % 2 ? Wine : Beef;
-              return (
-                <li key={it.name}>
-                  <Reveal className="h-full" delay={i % 2 ? 1 : undefined}>
-                    <div className={tile}>
-                      {first && (
-                        <span className="absolute top-5 right-5 rounded-full bg-secondary px-3 py-1 text-[11px] font-light tracking-[0.2em] text-muted-foreground uppercase">Our first date</span>
-                      )}
-                      <span className={chip}>
-                        <Icon className="size-5" strokeWidth={1.4} />
-                      </span>
-                      <Title name={it.name} url={"url" in it ? it.url : undefined} />
-                      {it.text && (
-                        <p className="mt-3 text-[15px] leading-[1.8] font-light text-muted-foreground">
-                          <LinkedText text={it.text} />
-                        </p>
-                      )}
-                    </div>
-                  </Reveal>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+      <Container wide className="py-16 sm:py-24">
+        <SectionTitle eyebrow="Eat & drink">{LONDON.favouriteBars.heading}</SectionTitle>
+        <ul className="mx-auto mt-14 grid max-w-3xl gap-x-16 gap-y-14 sm:grid-cols-2">
+          {LONDON.favouriteBars.items.map((it, i) => (
+            <li key={it.name}>
+              <Reveal className="h-full" delay={i % 2 ? 1 : undefined}>
+                <Entry icon={it.name === "Swift" ? Heart : i % 2 ? Wine : Beef} name={it.name} url={"url" in it ? it.url : undefined} text={it.text} tag={it.name === "Swift" ? "Our first date" : it.name === "Hawksmoor" ? "Our second date" : undefined} />
+              </Reveal>
+            </li>
+          ))}
+        </ul>
+      </Container>
 
-        <section>
-          <Reveal>
-            <SectionHead eyebrow="While you’re in town">{LONDON.thingsWeLove.heading}</SectionHead>
-          </Reveal>
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {LONDON.thingsWeLove.items.map((it, i) => {
-              const Icon = THINGS[it.name] ?? Sparkles;
-              return (
-                <li key={it.name} className="sm:[&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1 lg:[&:last-child:nth-child(3n+1)]:col-start-2">
-                  <Reveal className="h-full" delay={(i % 3 === 0 ? undefined : i % 3 === 1 ? 1 : 2) as 1 | 2 | undefined}>
-                    <div className={tile}>
-                      <span className={chip}>
-                        <Icon className="size-5" strokeWidth={1.4} />
-                      </span>
-                      <Title name={it.name} />
-                      {it.text && (
-                        <p className="mt-3 text-[15px] leading-[1.8] font-light text-muted-foreground">
-                          <LinkedText text={it.text} />
-                        </p>
-                      )}
-                    </div>
-                  </Reveal>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      </div>
+      <PhotoBand ratio={1448 / 1086} src="/site/bench.webp" alt="Vanessa and Hope laughing together on a park bench" />
+
+      <Container wide className="py-16 sm:py-24">
+        <SectionTitle eyebrow="While you’re in town">{LONDON.thingsWeLove.heading}</SectionTitle>
+        <ul className="mt-14 grid gap-x-14 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {LONDON.thingsWeLove.items.map((it, i) => (
+            <li key={it.name} className="sm:[&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1 lg:[&:last-child:nth-child(3n+1)]:col-start-2">
+              <Reveal className="h-full" delay={(i % 3 === 0 ? undefined : i % 3 === 1 ? 1 : 2) as 1 | 2 | undefined}>
+                <Entry icon={THINGS[it.name] ?? Sparkles} name={it.name} text={it.text} />
+              </Reveal>
+            </li>
+          ))}
+        </ul>
+      </Container>
     </PageShell>
   );
 }

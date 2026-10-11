@@ -69,12 +69,12 @@ export const LONDON = {
   favouriteBars: {
     heading: "Our favourite bars and restaurants",
     items: [
-      { name: "Hawksmoor", url: "https://thehawksmoor.com", text: "Our go-to when we want a proper sit-down meal." },
       {
         name: "Swift",
         url: "https://soho.barswift.com",
         text: "We don’t go to many bars, but we had our first date here, so there must be something in the drinks there :P",
       },
+      { name: "Hawksmoor", url: "https://thehawksmoor.com", text: "Our second date. We talked for so long and laughed so hard, we knew there was no world where we wouldn’t be together." },
     ],
   },
   thingsWeLove: {
@@ -104,7 +104,7 @@ export const LONDON = {
         name: "Experiences",
         text: "Live shows you can step into: [The Traitors – Live Experience](https://www.thetraitorslive.co.uk) and The Cube.",
       },
-      { name: "Music", text: "We love to escape and discover new artists at small venues such as [The Jazz Cafe](https://thejazzcafe.com)." },
+      { name: "Music", text: "We love to escape and discover new artists, and we tend to find them at [Sofar Sounds](https://www.sofarsounds.com) events. We also love small venues such as [The Jazz Cafe](https://thejazzcafe.com)." },
     ],
   },
 };

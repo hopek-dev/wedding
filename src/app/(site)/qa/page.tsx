@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { PageShell } from "@/components/site/page-shell";
+import { Container, PageShell } from "@/components/site/page-shell";
 import { Reveal } from "@/components/site/reveal";
 import { getRsvpDeadline } from "@/app/actions/settings";
 import { formatDeadline } from "@/lib/rsvp-deadline";
@@ -23,32 +23,34 @@ export default async function QaPage() {
     return item.a ?? "";
   };
   return (
-    <PageShell title="Q & A" intro={QA_INTRO}>
-      <Reveal>
-        <div className="divide-y bg-card ring-1 ring-foreground/10">
-          {QA.map((item, n) => (
-            <details key={item.q} className="faq group" open={n === 0}>
-              <summary className="flex min-h-14 items-center justify-between gap-4 px-5 py-5 text-left sm:px-6 sm:py-6">
-                <span className="text-xl font-light tracking-wide sm:text-2xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
-                  {item.q}
-                </span>
-                <ChevronDown className="faq-chevron size-5 shrink-0 text-muted-foreground transition-transform" strokeWidth={1.4} />
-              </summary>
-              <p className="px-5 pb-7 text-[15px] leading-relaxed font-light text-muted-foreground sm:px-6">
-                {answerFor(item)}
-                {item.kind === "contact" && QA_CONTACT.phone && (
-                  <>
-                    {" "}
-                    <a href={`tel:${tel}`} className="underline underline-offset-4">
-                      Call
-                    </a>
-                  </>
-                )}
-              </p>
-            </details>
-          ))}
-        </div>
-      </Reveal>
+    <PageShell title="Q & A" intro={QA_INTRO} hero={{ src: "/site/palms.webp", alt: "Vanessa and Hope laughing together on a palm-lined beach", pos: "object-[50%_30%]" }}>
+      <Container className="py-12 sm:py-20">
+        <Reveal>
+          <div className="border-b border-foreground/15">
+            {QA.map((item, n) => (
+              <details key={item.q} className="faq group border-t border-foreground/15" open={n === 0}>
+                <summary className="flex min-h-16 items-center justify-between gap-4 py-6 text-left">
+                  <span className="text-2xl font-light tracking-wide sm:text-[1.65rem]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
+                    {item.q}
+                  </span>
+                  <ChevronDown className="faq-chevron size-5 shrink-0 text-muted-foreground transition-transform duration-500" strokeWidth={1.2} />
+                </summary>
+                <p className="pb-8 text-[15px] leading-[1.85] font-light text-muted-foreground sm:max-w-[90%]">
+                  {answerFor(item)}
+                  {item.kind === "contact" && QA_CONTACT.phone && (
+                    <>
+                      {" "}
+                      <a href={`tel:${tel}`} className="underline underline-offset-4">
+                        Call
+                      </a>
+                    </>
+                  )}
+                </p>
+              </details>
+            ))}
+          </div>
+        </Reveal>
+      </Container>
     </PageShell>
   );
 }

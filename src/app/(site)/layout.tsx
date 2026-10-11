@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GuestTheme } from "@/components/rsvp/guest-theme";
+import { PageTransition } from "@/components/site/page-transition";
 import { SiteHeader } from "@/components/site/site-header";
 import { SmoothScroll } from "@/components/site/smooth-scroll";
 import { pill } from "@/components/site/page-shell";
@@ -22,17 +23,19 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <GuestTheme />
       <SmoothScroll />
       <SiteHeader />
-      {children}
-      <footer className="mt-10 border-t bg-secondary/50 px-5 py-14 text-center">
-        <p className="font-cursive text-5xl text-muted-foreground">{WEDDING.names}</p>
-        <p className="mt-3 text-xs font-light tracking-[0.22em] text-muted-foreground uppercase">
-          {eventDay(`${WEDDING.date}T12:00:00Z`)}
-        </p>
-        <p className="mt-1 text-xs font-light tracking-[0.22em] text-muted-foreground uppercase">{VENUE.name}</p>
-        <Link href="/rsvp" className={`${pill} mt-8`}>
-          RSVP
-        </Link>
-      </footer>
+      <PageTransition>
+        {children}
+        <footer className="mt-10 border-t bg-secondary/50 px-5 py-14 text-center">
+          <p className="font-cursive text-5xl text-muted-foreground">{WEDDING.names}</p>
+          <p className="mt-3 text-xs font-light tracking-[0.22em] text-muted-foreground uppercase">
+            {eventDay(`${WEDDING.date}T12:00:00Z`)}
+          </p>
+          <p className="mt-1 text-xs font-light tracking-[0.22em] text-muted-foreground uppercase">{VENUE.name}</p>
+          <Link href="/rsvp" className={`${pill} mt-8`}>
+            RSVP
+          </Link>
+        </footer>
+      </PageTransition>
     </div>
   );
 }

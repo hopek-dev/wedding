@@ -14,8 +14,10 @@ const SLIDES: Slide[] = [
   { src: "/site/blossom.webp", alt: "Vanessa and Hope among the blossom", pos: "object-[50%_28%]" },
   { src: "/site/seaside.webp", alt: "Vanessa and Hope by the sea", pos: "object-[45%_40%]" },
   { src: "/site/lisbon.webp", alt: "Vanessa and Hope by a fountain in Lisbon", pos: "object-[50%_35%]" },
-  { src: "/site/venue.webp", alt: "Mulberry House across the lake", pos: "object-center" },
-  { src: "/site/ring.webp", alt: "Their hands together, with an engagement ring", pos: "object-center" },
+  { src: "/site/engagement.webp", alt: "Vanessa and Hope, laughing, showing her engagement ring", pos: "object-[58%_0%]" },
+  { src: "/site/tower-bridge-wide.webp", alt: "Vanessa and Hope in front of Tower Bridge at night", pos: "object-[40%_10%]" },
+  { src: "/site/palms.webp", alt: "Vanessa and Hope laughing together on a palm-lined beach", pos: "object-[50%_20%]" },
+  { src: "/site/lake.webp", alt: "Vanessa and Hope laughing by the lake", pos: "object-[38%_30%]" },
 ];
 
 export default function WelcomePage() {

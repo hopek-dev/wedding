@@ -1,8 +1,7 @@
 import Image from "next/image";
-import { Gift } from "lucide-react";
 import { getPublicRegistry } from "@/app/actions/registry";
 import { GiftCard } from "@/components/site/gift-card";
-import { PageShell, pill } from "@/components/site/page-shell";
+import { Container, PageShell, SectionTitle, pill } from "@/components/site/page-shell";
 import { Reveal } from "@/components/site/reveal";
 import { GIFTS } from "@/lib/site-content";
 
@@ -12,38 +11,33 @@ export const dynamic = "force-dynamic";
 export default async function GiftListPage() {
   const { items } = await getPublicRegistry();
   return (
-    <PageShell title="Gift List" wide>
-      <Reveal>
-        <div className="grid overflow-hidden bg-card shadow-[0_24px_60px_-34px_rgba(70,62,30,0.55)] ring-1 ring-foreground/10 md:grid-cols-2">
-          <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[22rem]">
-            <Image src="/site/ring.webp" alt="Their hands together, with an engagement ring" fill sizes="(min-width: 768px) 480px, 100vw" className="object-cover" />
+    <PageShell title="Gift List" hero={{ src: "/site/lake.webp", alt: "Vanessa and Hope laughing by the lake", pos: "object-[38%_40%]" }}>
+      {/* the honeymoon: a thumbnail photo to the left of the message and the button */}
+      <Container wide className="py-14 sm:py-20">
+        <Reveal>
+          <div className="mx-auto grid max-w-4xl items-center gap-8 sm:grid-cols-[minmax(0,20rem)_1fr] sm:gap-12">
+            <div className="relative mx-auto aspect-[4/3] w-full max-w-sm overflow-hidden bg-secondary shadow-[0_20px_50px_-28px_rgba(70,62,30,0.5)] ring-1 ring-foreground/10 sm:max-w-none">
+              <Image src="/site/honeymoon.webp" alt="Vanessa and Hope on a boat in the sea" fill sizes="(min-width: 640px) 320px, 90vw" className="object-cover object-[50%_40%]" />
+            </div>
+            <div className="text-center">
+              <p className="mx-auto max-w-md leading-relaxed font-light" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "clamp(1.2rem, 2.1vw, 1.55rem)" }}>
+                {GIFTS.message}
+              </p>
+              <a href={GIFTS.fundUrl} target="_blank" rel="noopener noreferrer" className={`${pill} mt-7`}>
+                Contribute to our honeymoon
+              </a>
+            </div>
           </div>
-          <div className="flex flex-col items-center justify-center px-8 py-12 text-center">
-            <span className="mb-4 grid size-12 place-items-center rounded-full bg-secondary text-muted-foreground ring-1 ring-foreground/10">
-              <Gift className="size-5" strokeWidth={1.4} />
-            </span>
-            <p className="text-lg leading-relaxed font-light" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "1.45rem" }}>
-              {GIFTS.message}
-            </p>
-            <a href={GIFTS.fundUrl} target="_blank" rel="noopener noreferrer" className={`${pill} mt-8`}>
-              Contribute to our honeymoon
-            </a>
-          </div>
-        </div>
-      </Reveal>
+        </Reveal>
+      </Container>
 
       {items.length > 0 && (
-        <section className="mt-16">
+        <Container wide className="pb-10">
+          <SectionTitle eyebrow="Or choose something from our list">Our list</SectionTitle>
           <Reveal>
-            <h2 className="text-center text-2xl font-light tracking-[0.12em] uppercase sm:text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
-              Or choose something from our list
-            </h2>
-            <p className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed font-light text-muted-foreground">
+            <p className="mx-auto mt-6 mb-12 max-w-md text-center text-[15px] leading-relaxed font-light text-muted-foreground">
               Buy a gift from the shop, then tap &ldquo;I&rsquo;ve bought this&rdquo; so no one doubles up.
             </p>
-            <div className="ornament mt-5 mb-10" aria-hidden>
-              <i />
-            </div>
           </Reveal>
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((it) => (
@@ -52,7 +46,7 @@ export default async function GiftListPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </Container>
       )}
     </PageShell>
   );

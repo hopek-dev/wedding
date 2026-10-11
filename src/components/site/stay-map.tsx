@@ -45,6 +45,6 @@ export function StayMap({ places }: { places: StayPlace[] }) {
   }, [places]);
 
   return (
-    <div ref={el} role="application" aria-label="Map of places to stay around the venue" className="z-0 h-[22rem] w-full bg-secondary sm:h-[30rem]" />
+    <div ref={el} role="application" aria-label="Map of places to stay around the venue" className="z-0 h-[26rem] w-full bg-secondary sm:h-[34rem]" />
   );
 }
