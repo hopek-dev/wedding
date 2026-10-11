@@ -52,6 +52,17 @@ export default async function GiftListPage() {
             <p className="mx-auto mt-6 mb-12 max-w-md text-center text-[15px] leading-relaxed font-light text-muted-foreground">
               Buy a gift from the shop, then tap &ldquo;I&rsquo;ve bought this&rdquo; so no one doubles up.
             </p>
+            <div className="mx-auto -mt-6 mb-12 max-w-sm text-center text-[15px] leading-relaxed font-light">
+              <p className="text-muted-foreground">Please have gifts sent to:</p>
+              <address className="mt-1 not-italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "1.25rem" }}>
+                {GIFTS.deliveryAddress.map((part, i) => (
+                  <span key={part}>
+                    {i > 0 && ", "}
+                    <span className="whitespace-nowrap">{part}</span>
+                  </span>
+                ))}
+              </address>
+            </div>
           </Reveal>
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((it) => (

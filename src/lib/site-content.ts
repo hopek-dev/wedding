@@ -234,6 +234,8 @@ export const GIFTS = {
   // "Friends & Family". Neither link reports back to this site: the gifts show up in those accounts.
   monzoUrl: "https://monzo.me/hopetettey?h=VZyBGi&account_type=personal",
   paypalUrl: "https://paypal.me/HopeKTettey",
+  // Where gifts bought from the registry are delivered.
+  deliveryAddress: ["36 Oxford Close", "Mitcham", "Surrey", "CR4 1DY", "United Kingdom"],
 };
 
 // The Q & A page. The RSVP deadline answer is filled in from the planner's deadline setting
