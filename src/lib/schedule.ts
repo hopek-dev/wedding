@@ -28,7 +28,6 @@ export const SCHEDULE: ScheduleItem[] = [
     endDate: WEDDING.date,
     end: "14:00",
     venue: VENUE_FULL_NAME,
-    dressCode: "Cocktail Attire",
     note: "We\u2019re tying the knot!",
   },
   { id: "photo-time", name: "Photo Time!", date: WEDDING.date, start: "14:00", endDate: WEDDING.date, end: "15:30", venue: VENUE_FULL_NAME },

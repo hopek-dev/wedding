@@ -29,5 +29,6 @@ export async function setRsvpDeadline(deadline: string | null): Promise<SaveDead
     .upsert({ key: DEADLINE_KEY, value: deadline, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/invitations");
+  revalidatePath("/qa"); // the public Q & A quotes the deadline
   return { ok: true };
 }
