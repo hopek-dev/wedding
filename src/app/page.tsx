@@ -9,6 +9,7 @@ import { formatDateTime, formatGBP } from "@/lib/format";
 import { taskVisualStatus } from "@/lib/gantt";
 import { categoryTotals, guestCountsByEvent, resolvedEstimatedCost, totalVariance } from "@/lib/budget";
 import { totalUnnamed } from "@/lib/party";
+import { tagSplit } from "@/lib/tag-split";
 import { CategoryBarChart } from "@/components/budget/category-bar-chart";
 import { Landmark, UtensilsCrossed, Ship, MapPin, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,11 @@ export default async function DashboardPage() {
   const awaitingCount = countOf("awaiting");
   const declinedCount = countOf("declined");
   const notInvitedCount = countOf("none");
+
+  const split = tagSplit(guests, guestStatus);
+  const splitTotal = split.reduce((a, r) => a + r.total, 0);
+  const tagLabel = (t: string) => t || "No tag";
+  const tagColors = ["bg-primary", "bg-primary/55", "bg-primary/30", "bg-muted-foreground/40"];
 
   const eventStats = (eventId: string) => {
     const rows = rsvps.filter((r) => r.event_id === eventId);
@@ -204,6 +210,78 @@ export default async function DashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {split.length > 0 && (
+        <Link href="/guests">
+          <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary/40 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_28px_-10px_rgba(0,0,0,0.16)] active:translate-y-0 active:scale-[0.98]">
+            <CardHeader>
+              <CardTitle>Guest split by tag</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Everyone invited, grouped by tag. +1s that are allowed but not named yet are included in each total.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-5">
+              <div>
+                <div className="flex h-3 overflow-hidden rounded-full bg-muted" role="img" aria-label={split.map((r) => `${tagLabel(r.tag)} ${r.total}`).join(", ")}>
+                  {split.map((r, i) => (
+                    <div key={r.tag} className={tagColors[Math.min(i, tagColors.length - 1)]} style={{ width: `${(r.total / splitTotal) * 100}%` }} />
+                  ))}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                  {split.map((r, i) => (
+                    <span key={r.tag} className="inline-flex items-center gap-1.5">
+                      <span className={cn("size-2.5 rounded-full", tagColors[Math.min(i, tagColors.length - 1)])} />
+                      <span className="font-medium">{tagLabel(r.tag)}</span>
+                      <span className="text-muted-foreground">
+                        {r.total} ({Math.round((r.total / splitTotal) * 100)}%)
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[30rem] text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-muted-foreground">
+                      <th className="py-1.5 pr-3 font-medium">Tag</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Total</th>
+                      <th className="px-2 py-1.5 text-right font-medium text-emerald-600 dark:text-emerald-400">Confirmed</th>
+                      <th className="px-2 py-1.5 text-right font-medium text-amber-600 dark:text-amber-400">Awaiting</th>
+                      <th className="px-2 py-1.5 text-right font-medium text-red-600 dark:text-red-400">Declined</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Not invited</th>
+                      <th className="py-1.5 pl-2 text-right font-medium">+1 to name</th>
+                    </tr>
+                  </thead>
+                  <tbody className="tabular-nums">
+                    {split.map((r) => (
+                      <tr key={r.tag} className="border-t">
+                        <td className="py-2 pr-3 font-medium">{tagLabel(r.tag)}</td>
+                        <td className="px-2 py-2 text-right font-semibold">{r.total}</td>
+                        <td className="px-2 py-2 text-right">{r.confirmed}</td>
+                        <td className="px-2 py-2 text-right">{r.awaiting}</td>
+                        <td className="px-2 py-2 text-right">{r.declined}</td>
+                        <td className="px-2 py-2 text-right">{r.notInvited}</td>
+                        <td className="py-2 pl-2 text-right">{r.unnamed}</td>
+                      </tr>
+                    ))}
+                    {split.length > 1 && (
+                      <tr className="border-t font-semibold">
+                        <td className="py-2 pr-3">All</td>
+                        <td className="px-2 py-2 text-right">{splitTotal}</td>
+                        <td className="px-2 py-2 text-right">{split.reduce((a, r) => a + r.confirmed, 0)}</td>
+                        <td className="px-2 py-2 text-right">{split.reduce((a, r) => a + r.awaiting, 0)}</td>
+                        <td className="px-2 py-2 text-right">{split.reduce((a, r) => a + r.declined, 0)}</td>
+                        <td className="px-2 py-2 text-right">{split.reduce((a, r) => a + r.notInvited, 0)}</td>
+                        <td className="py-2 pl-2 text-right">{split.reduce((a, r) => a + r.unnamed, 0)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       <div>
         <h2 className="font-heading text-xl font-semibold tracking-tight">Budget by category</h2>
