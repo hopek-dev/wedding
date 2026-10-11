@@ -6,6 +6,7 @@ import type { Guest, GuestRsvp, WeddingEvent } from "@/lib/supabase/types";
 import { getRsvpDeadline } from "@/app/actions/settings";
 import { formatDeadline, isRsvpClosed } from "@/lib/rsvp-deadline";
 import { requireAdmin } from "@/lib/require-admin";
+import { syncPlusOneInvites } from "@/lib/plus-one-invites";
 import { STAY_OTHER, STAY_PLACES } from "@/lib/site-content";
 
 export interface RsvpParty {
@@ -27,6 +28,9 @@ export async function getRsvpParty(token: string): Promise<RsvpParty | null> {
   if (!guest) return null;
 
   const { data: plusOnes } = await supabase.from("guests").select("*").eq("plus_one_of", guest.id);
+  // A plus-one who was linked to this guest but never invited to anything is brought up to date first, so the
+  // page asks for their answer too (they are invited to what the guest is invited to).
+  if (plusOnes?.length) await syncPlusOneInvites(supabase, plusOnes.map((p: { id: string }) => p.id)).catch(() => 0);
   const members = [guest as Guest, ...((plusOnes ?? []) as Guest[])];
   const { data: rsvps } = await supabase
     .from("guest_rsvps")

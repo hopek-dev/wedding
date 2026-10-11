@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { Guest, GuestRsvp, RsvpStatus } from "@/lib/supabase/types";
 import type { ImportedGuest } from "@/lib/guest-import";
 import { requireAdmin } from "@/lib/require-admin";
+import { syncPlusOneInvites } from "@/lib/plus-one-invites";
 
 export async function listGuestsWithRsvps() {
   await requireAdmin();
@@ -54,6 +55,8 @@ export async function createGuest(input: {
     );
     if (rsvpError) throw rsvpError;
   }
+  // a plus-one is invited to what the guest they belong to is invited to
+  if (input.plus_one_of) await syncPlusOneInvites(supabase, [guest.id]);
 
   revalidatePath("/");
   revalidatePath("/guests");
@@ -216,6 +219,8 @@ async function runBulkImport(guests: ImportedGuest[], mode: ImportMode) {
     const { error: rsvpError } = await supabase.from("guest_rsvps").insert(rsvpRows);
     if (rsvpError) throw rsvpError;
   }
+  // plus-ones linked by this import are invited to what their guest is invited to
+  await syncPlusOneInvites(supabase);
 
   // Replace: now that the new list is safely in, remove the old one. RSVPs and
   // seat assignments go with them (cascade).
@@ -256,6 +261,7 @@ export async function updateGuest(id: string, patch: Partial<Guest>) {
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
+  if (patch.plus_one_of) await syncPlusOneInvites(supabase, [id]);
   revalidatePath("/");
   revalidatePath("/guests");
 }
@@ -285,6 +291,11 @@ export async function upsertRsvp(input: {
       { onConflict: "guest_id,event_id" }
     );
   if (error) throw error;
+  // inviting a guest brings their plus-ones along (if they aren't invited to anything yet)
+  if (input.status !== "not_invited") {
+    const { data: kids } = await supabase.from("guests").select("id").eq("plus_one_of", input.guest_id);
+    if (kids?.length) await syncPlusOneInvites(supabase, kids.map((k: { id: string }) => k.id));
+  }
   revalidatePath("/");
   revalidatePath("/guests");
 }
