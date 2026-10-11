@@ -230,8 +230,10 @@ export function stayLabel(id: string | null | undefined) {
 export const GIFTS = {
   message:
     "Your presence is the best gift we could ask for! But if you’re feeling generous, you can contribute towards our honeymoon :)",
-  // Where the "contribute" button goes: the honeymoon fund on Joy, which collects the cash.
-  fundUrl: process.env.NEXT_PUBLIC_HONEYMOON_FUND_URL?.trim() || "https://withjoy.com/vanessa-and-hope/registry?pid=6a991f35-55ae-49f1-8eb7-af7fdbcec323",
+  // Where cash gifts go. UK guests pay by Monzo (a bank-transfer link, no fee to give); guests abroad use PayPal
+  // "Friends & Family". Neither link reports back to this site: the gifts show up in those accounts.
+  monzoUrl: "https://monzo.me/hopetettey?h=VZyBGi&account_type=personal",
+  paypalUrl: "https://paypal.me/HopeKTettey",
 };
 
 // The Q & A page. The RSVP deadline answer is filled in from the planner's deadline setting

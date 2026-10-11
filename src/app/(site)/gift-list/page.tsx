@@ -3,7 +3,7 @@ import { resolvePhoto } from "@/lib/site-photos";
 import Image from "next/image";
 import { getPublicRegistry } from "@/app/actions/registry";
 import { GiftCard } from "@/components/site/gift-card";
-import { Container, PageShell, SectionTitle, pill } from "@/components/site/page-shell";
+import { Container, PageShell, SectionTitle, pill, pillOutline } from "@/components/site/page-shell";
 import { Reveal } from "@/components/site/reveal";
 import { GIFTS } from "@/lib/site-content";
 
@@ -27,9 +27,19 @@ export default async function GiftListPage() {
               <p className="mx-auto max-w-md leading-relaxed font-light" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "clamp(1.2rem, 2.1vw, 1.55rem)" }}>
                 {GIFTS.message}
               </p>
-              <a href={GIFTS.fundUrl} target="_blank" rel="noopener noreferrer" className={`${pill} mt-7`}>
-                Contribute to our honeymoon
-              </a>
+              <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                <a href={GIFTS.monzoUrl} target="_blank" rel="noopener noreferrer" className={`${pill} !h-auto flex-col gap-0.5 px-5 py-3`}>
+                  <span>Give from the UK</span>
+                  <span className="text-[11px] font-light opacity-80">Pay by bank or card (Monzo)</span>
+                </a>
+                <a href={GIFTS.paypalUrl} target="_blank" rel="noopener noreferrer" className={`${pillOutline} !h-auto flex-col gap-0.5 px-5 py-3`}>
+                  <span>Give from abroad</span>
+                  <span className="text-[11px] font-light opacity-80">PayPal</span>
+                </a>
+              </div>
+              <p className="mx-auto mt-4 max-w-sm text-[12.5px] leading-relaxed font-light text-muted-foreground">
+                On PayPal, please choose <strong className="font-medium">Friends &amp; Family</strong>. Thank you!
+              </p>
             </div>
           </div>
         </Reveal>
