@@ -69,7 +69,7 @@ export function SiteHeader() {
       <div aria-hidden className="h-[4.1rem] md:h-[11.8rem]" style={fullHeight ? { height: fullHeight } : undefined} />
 
       {open && (
-        <button type="button" aria-label="Close menu" tabIndex={-1} className="fixed inset-0 z-30 bg-foreground/30 md:hidden" onClick={() => setOpen(false)} />
+        <button type="button" data-lenis-prevent aria-label="Close menu" tabIndex={-1} className="fixed inset-0 z-30 bg-foreground/30 md:hidden" onClick={() => setOpen(false)} />
       )}
       <header className="fixed inset-x-0 top-0 z-40 border-b bg-background/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div ref={bar} className="relative px-4 pt-3 pb-2 text-center md:pt-9 md:pb-3">

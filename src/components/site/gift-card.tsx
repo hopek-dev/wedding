@@ -143,7 +143,7 @@ function ThankYou({ name, title, onClose }: { name: string; title: string; onClo
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 p-5" onClick={onClose} role="presentation">
+    <div data-lenis-prevent className="fixed inset-0 z-[100] grid place-items-center bg-black/55 p-5" onClick={onClose} role="presentation">
       <div
         role="dialog"
         aria-modal="true"

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { GuestTheme } from "@/components/rsvp/guest-theme";
 import { SiteHeader } from "@/components/site/site-header";
+import { SmoothScroll } from "@/components/site/smooth-scroll";
 import { pill } from "@/components/site/page-shell";
 import { VENUE, WEDDING } from "@/lib/site-content";
 import { eventDay } from "@/lib/public-site";
@@ -19,6 +20,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <GuestTheme />
+      <SmoothScroll />
       <SiteHeader />
       {children}
       <footer className="mt-10 border-t bg-secondary/50 px-5 py-14 text-center">
