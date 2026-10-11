@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 
 type Choice = "yes" | "no" | undefined;
 
-const blankSlots = (n: number) => Array.from({ length: Math.max(0, n) }, () => ({ first: "", last: "", diet: "" }));
+type Slot = { first: string; last: string; diet: string; choices: Record<string, "yes" | "no"> };
+const blankSlots = (n: number): Slot[] => Array.from({ length: Math.max(0, n) }, () => ({ first: "", last: "", diet: "", choices: {} }));
 
 export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; token: string; preview?: boolean }) {
   const rsvpOf = (guestId: string, eventId: string) =>
@@ -65,19 +66,24 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
 
   // A plus-one just added here shows in the reply list straight away, and
   // attends whatever the invitee attends.
-  function addPlusOnes(added: Guest[]) {
+  function addPlusOnes(added: Guest[], own?: (g: Guest) => Record<string, "yes" | "no"> | undefined) {
     setExtra((cur) => [...cur, ...added]);
     setChoices((cur) => {
       const next = { ...cur };
       for (const g of added)
         for (const e of party.events) {
-          const host = cur[`${party.guest.id}:${e.id}`];
-          if (host) next[`${g.id}:${e.id}`] = host;
+          const mine = own?.(g)?.[e.id] ?? cur[`${party.guest.id}:${e.id}`];
+          if (mine) next[`${g.id}:${e.id}`] = mine;
         }
       return next;
     });
     setPlusOnes(blankSlots(openSlots - added.length));
   }
+
+  // The events the guest is invited to, and what a new plus-one will answer for each: their own button if they
+  // pressed one, otherwise the same as the guest's own answer.
+  const hostEvents = party.events.filter((e) => invited(party.guest.id, e.id));
+  const effective = (p: Slot, eventId: string) => p.choices[eventId] ?? choices[`${party.guest.id}:${eventId}`];
 
   async function handleSubmit() {
     if (preview) {
@@ -88,7 +94,11 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         .map((p, i) => ({ ...party.guest, id: `preview-added-${pending.length + i}`, first_name: p.first.trim(), last_name: p.last.trim() || null, plus_one_of: party.guest.id, diet: p.diet.trim() }));
       if (pretend.length) {
         setDietary((d) => ({ ...d, ...Object.fromEntries(pretend.filter((g) => g.diet).map((g) => [g.id, g.diet])) }));
-        addPlusOnes(pretend);
+        const named = plusOnes.slice(0, openSlots).filter((p) => p.first.trim());
+        addPlusOnes(pretend, (g) => {
+          const slot = named.find((p) => p.first.trim() === g.first_name);
+          return slot ? Object.fromEntries(hostEvents.flatMap((e) => (effective(slot, e.id) ? [[e.id, effective(slot, e.id)!]] : []))) : undefined;
+        });
       }
       setDone(true);
       return;
@@ -108,7 +118,12 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       const newPlusOnes = plusOnes
         .slice(0, openSlots)
         .filter((p) => p.first.trim())
-        .map((p) => ({ first_name: p.first.trim(), last_name: p.last.trim() || undefined, dietary_notes: p.diet.trim() || undefined }));
+        .map((p) => ({
+          first_name: p.first.trim(),
+          last_name: p.last.trim() || undefined,
+          dietary_notes: p.diet.trim() || undefined,
+          answers: hostEvents.flatMap((e) => (effective(p, e.id) ? [{ event_id: e.id, attending: effective(p, e.id) === "yes" }] : [])),
+        }));
       const result = await submitRsvp({ token, answers, accommodation, newPlusOnes });
       if (!result.ok) {
         toast.error(result.error);
@@ -125,7 +140,10 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
           }
           return next;
         });
-        addPlusOnes(result.added);
+        addPlusOnes(result.added, (g) => {
+          const slot = newPlusOnes.find((t) => same(t.first_name, g.first_name) && same(t.last_name ?? "", g.last_name));
+          return slot ? Object.fromEntries(slot.answers.map((a) => [a.event_id, a.attending ? "yes" : "no"] as const)) : undefined;
+        });
       }
       setDone(true);
     } catch (err) {
@@ -254,7 +272,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         <section className="rounded-md border bg-card p-6">
           <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{openSlots === 1 ? "Bringing a plus-one?" : "Bringing guests?"}</h3>
           <p className="mb-3 text-sm text-muted-foreground">
-            Add their name and they&apos;ll be included on your invitation, at the same events you&apos;re attending. Leave
+            Add their name and they&apos;ll be included on your invitation. You can then say which events they&apos;ll be at. Leave
             this blank if you&apos;re coming on your own.
           </p>
           <div className="grid gap-3">
@@ -272,7 +290,34 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
                   aria-label={openSlots === 1 ? "Plus-one last name" : `Guest ${i + 1} last name`}
                   onChange={(e) => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, last: e.target.value } : x)))}
                 />
-                {/* Once they have a name, they can also say what they can't eat. */}
+                {/* Once they have a name, they answer for each event themselves (starting from the same as you),
+                    and can also say what they can't eat. */}
+                {p.first.trim() && (
+                  <div className="col-span-2 grid gap-2 rounded-md bg-secondary/50 p-3">
+                    <div className="text-sm font-medium">Will {p.first.trim()} be joining us?</div>
+                    {hostEvents.map((event) => (
+                      <div key={event.id} className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">{event.name}</span>
+                        <div className="flex gap-2">
+                          <ChoiceButton
+                            active={effective(p, event.id) === "yes"}
+                            tone="yes"
+                            onClick={() => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, choices: { ...x.choices, [event.id]: "yes" } } : x)))}
+                          >
+                            <Check className="size-4" /> Accept
+                          </ChoiceButton>
+                          <ChoiceButton
+                            active={effective(p, event.id) === "no"}
+                            tone="no"
+                            onClick={() => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, choices: { ...x.choices, [event.id]: "no" } } : x)))}
+                          >
+                            <X className="size-4" /> Decline
+                          </ChoiceButton>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {p.first.trim() && (
                   <Textarea
                     className="col-span-2"

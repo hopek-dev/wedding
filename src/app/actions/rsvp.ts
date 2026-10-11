@@ -145,7 +145,7 @@ async function runSubmitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
   accommodation?: string;
-  newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string }>;
+  newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string; answers?: Array<{ event_id: string; attending: boolean }> }>;
 }) {
   const party = await getRsvpParty(input.token);
   if (!party) throw new Error("This RSVP link is no longer valid.");
@@ -156,13 +156,13 @@ async function runSubmitRsvp(input: {
   const supabase = createServiceClient();
 
   // Plus-ones the guest names themselves (never more than their open slots)
-  // become guests linked to them, invited to the same events, and attend
-  // whatever the invitee attends.
+  // become guests linked to them, invited to the same events. Each one answers for themselves; where no
+  // answer is given for an event they attend whatever the invitee attends.
   let members = party.members;
   let answers = input.answers;
   const added: Guest[] = [];
   const wanted = (input.newPlusOnes ?? [])
-    .map((p) => ({ first_name: tidyName(p.first_name).slice(0, 60), last_name: p.last_name ? tidyName(p.last_name).slice(0, 60) : null, dietary: p.dietary_notes?.trim().slice(0, 500) || null }))
+    .map((p) => ({ first_name: tidyName(p.first_name).slice(0, 60), last_name: p.last_name ? tidyName(p.last_name).slice(0, 60) : null, dietary: p.dietary_notes?.trim().slice(0, 500) || null, answers: p.answers ?? [] }))
     .filter((p) => p.first_name)
     // never add someone who is already in this party (a double tap, or a second submit)
     .filter(
@@ -193,17 +193,20 @@ async function runSubmitRsvp(input: {
     for (const g of newGuests) {
       added.push(g);
       members = [...members, g];
+      const typed = wanted.find((w) => w.first_name.toLowerCase() === g.first_name.toLowerCase() && (w.last_name ?? "").toLowerCase() === (g.last_name ?? "").toLowerCase());
+      const own = new Map((typed?.answers ?? []).filter((x) => invitedTo.has(x.event_id)).map((x) => [x.event_id, x.attending]));
+      // their own answer for an event where they gave one, otherwise whatever the guest chose for themselves
+      const hostAnswers = input.answers.filter((a) => a.guest_id === party.guest.id);
+      const eventIds = new Set([...hostAnswers.map((a) => a.event_id), ...own.keys()]);
       answers = [
         ...answers,
-        ...input.answers
-          .filter((a) => a.guest_id === party.guest.id)
-          .map((a) => ({
-            guest_id: g.id,
-            event_id: a.event_id,
-            attending: a.attending,
-            // what the guest wrote for this plus-one when they named them
-            dietary_notes: wanted.find((w) => w.first_name.toLowerCase() === g.first_name.toLowerCase() && (w.last_name ?? "").toLowerCase() === (g.last_name ?? "").toLowerCase())?.dietary ?? undefined,
-          })),
+        ...[...eventIds].map((event_id) => ({
+          guest_id: g.id,
+          event_id,
+          attending: own.has(event_id) ? own.get(event_id)! : hostAnswers.find((a) => a.event_id === event_id)!.attending,
+          // what the guest wrote for this plus-one when they named them
+          dietary_notes: typed?.dietary ?? undefined,
+        })),
       ];
     }
   }
@@ -254,7 +257,7 @@ export async function submitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
   accommodation?: string;
-  newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string }>;
+  newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string; answers?: Array<{ event_id: string; attending: boolean }> }>;
 }): Promise<SubmitRsvpResult> {
   try {
     return { ok: true, ...(await runSubmitRsvp(input)) };
