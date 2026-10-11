@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import Image from "next/image";
 import Link from "next/link";
 import { BedDouble, CalendarPlus, Camera, Heart, MapPin, Music, Navigation, UtensilsCrossed } from "lucide-react";
@@ -22,19 +24,20 @@ const serif = { fontFamily: "var(--font-cormorant), Georgia, serif" } as const;
 const action =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[13px] font-medium tracking-wide text-foreground ring-1 ring-foreground/20 transition-colors hover:bg-secondary active:bg-secondary";
 
-// The two photographs at the bottom of the page, side by side.
-const PHOTOS = [
-  { src: "/site/hands-crop.webp", alt: "Their hands together, with an engagement ring" },
-  { src: "/site/cheers.webp", alt: "Vanessa and Hope raising a toast" },
-];
+// The two photographs at the bottom of the page, side by side (slots schedule-photo-1 and schedule-photo-2).
+const PHOTO_SLOTS = ["schedule-photo-1", "schedule-photo-2"];
 
-export default function SchedulePage() {
+export const revalidate = 120;
+
+export default async function SchedulePage() {
+  const rows = await getSitePhotos();
   const last = SCHEDULE.length - 1;
+  const photos = PHOTO_SLOTS.map((id) => resolvePhoto(id, rows));
   return (
     <PageShell
       title="Schedule"
       intro={eventDay(`${WEDDING.date}T12:00:00Z`)}
-      hero={{ src: "/site/engagement.webp", alt: "Vanessa and Hope, laughing, showing her engagement ring", pos: "object-[58%_0%]" }}
+      hero={resolvePhoto("hero-schedule", rows)}
     >
       <Container wide className="py-16 sm:py-24">
         {/* The day as a timeline: a line runs from each event to the next, drawing itself as you scroll down.
@@ -104,9 +107,9 @@ export default function SchedulePage() {
       {/* two photographs, side by side, to finish */}
       <Reveal threshold={0}>
         <div className="grid grid-cols-2 gap-[3px] bg-background">
-          {PHOTOS.map((p) => (
-            <div key={p.src} className="relative aspect-square overflow-hidden bg-secondary sm:aspect-[4/3]">
-              <Image src={p.src} alt={p.alt} fill quality={90} sizes="50vw" className="object-cover object-top" />
+          {photos.map((p) => (
+            <div key={p.slot} className="relative aspect-square overflow-hidden bg-secondary sm:aspect-[4/3]">
+              <Image src={p.src} alt={p.alt} fill quality={90} sizes="50vw" className="object-cover" style={{ objectPosition: `${p.focus.x}% ${p.focus.y}%` }} />
             </div>
           ))}
         </div>

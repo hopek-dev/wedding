@@ -20,11 +20,11 @@ const ROW = {
 export function InvitationCard({
   summary,
   deadline,
-  art = VENUE_ART_URL,
+  art = { src: VENUE_ART_URL, focus: { x: 50, y: 50 } },
 }: {
   summary: InviteSummary;
   deadline: string | null;
-  art?: string;
+  art?: { src: string; focus: { x: number; y: number } };
 }) {
   const date = summary.dates.join(" · ");
   const venue = summary.venueDetails.map((v) => v.name).join(" · ");
@@ -37,7 +37,7 @@ export function InvitationCard({
     <div className="inv-card">
       <div className="inv-art">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={art} alt="" />
+        <img src={art.src} alt="" style={{ objectPosition: `${art.focus.x}% ${art.focus.y}%` }} />
       </div>
       <p className="inv-row inv-mono" style={{ top: ROW.mono }}>
         <span>V&amp;H</span>

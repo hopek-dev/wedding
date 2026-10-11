@@ -24,8 +24,8 @@
 }
 .inv-card p { margin: 0; }
 /* The painting sits near the top, 93.5% of the card wide, with its own soft edge. */
-.inv-art { position: absolute; top: 5%; left: 3.25%; width: 93.5%; }
-.inv-art img { display: block; width: 100%; height: auto; }
+.inv-art { position: absolute; top: 5%; left: 3.25%; width: 93.5%; aspect-ratio: 4 / 3; overflow: hidden; }
+.inv-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
 /* Every line is centred on a fixed height down the card (set in the component). */
 .inv-row { position: absolute; left: 0; right: 0; transform: translateY(-50%); white-space: nowrap; }
 .inv-mono span {

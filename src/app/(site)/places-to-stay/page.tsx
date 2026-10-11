@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import Link from "next/link";
 import { ExternalLink, MapPin, Star } from "lucide-react";
 import { Container, PageShell, SectionTitle, pill, pillOutline } from "@/components/site/page-shell";
@@ -9,12 +11,15 @@ export const metadata = { title: "Places to Stay" };
 
 const serif = { fontFamily: "var(--font-cormorant), Georgia, serif" } as const;
 
-export default function StayPage() {
+export const revalidate = 120;
+
+export default async function StayPage() {
+  const rows = await getSitePhotos();
   return (
     <PageShell
       title="Places to Stay"
       intro={STAY.intro}
-      hero={{ src: "/site/venue.webp", alt: `${VENUE.name} across the lake`, pos: "object-[50%_42%]" }}
+      hero={resolvePhoto("hero-places-to-stay", rows)}
     >
       {/* the map runs the full width of the page */}
       <Reveal>

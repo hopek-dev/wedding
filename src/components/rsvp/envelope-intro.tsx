@@ -15,6 +15,7 @@ export function EnvelopeIntro({
   deadline,
   cookieName,
   skip,
+  art,
   children,
 }: {
   firstName: string;
@@ -22,6 +23,7 @@ export function EnvelopeIntro({
   deadline: string | null;
   cookieName: string | null; // remembers that this guest has opened it; null = always show (preview)
   skip: boolean;
+  art?: { src: string; focus: { x: number; y: number } };
   children: React.ReactNode;
 }) {
   const [stage, setStage] = useState<Stage>(skip ? "done" : "closed");
@@ -87,7 +89,7 @@ export function EnvelopeIntro({
           >
             <div className="env-part env-back" />
             <div className="env-card-wrap">
-              <InvitationCard summary={summary} deadline={deadline} />
+              <InvitationCard summary={summary} deadline={deadline} art={art} />
             </div>
             <div className="env-part env-pocket">
               <i className="l" />
@@ -105,7 +107,7 @@ export function EnvelopeIntro({
           </div>
           {/* Full-size invitation, shown once the card is out of the envelope. */}
           <div className="inv-reader">
-            <InvitationCard summary={summary} deadline={deadline} />
+            <InvitationCard summary={summary} deadline={deadline} art={art} />
           </div>
           <p className="env-hint">Tap to open</p>
           <button type="button" className="env-continue" onClick={proceed}>

@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import { Container, PageShell, SectionTitle } from "@/components/site/page-shell";
 import { PhotoBand } from "@/components/site/photo-band";
 import { Reveal } from "@/components/site/reveal";
@@ -18,9 +20,12 @@ function Paragraph({ text }: { text: string }) {
   );
 }
 
-export default function OurStoryPage() {
+export const revalidate = 120;
+
+export default async function OurStoryPage() {
+  const rows = await getSitePhotos();
   return (
-    <PageShell title="Our Story" hero={{ src: "/site/blossom.webp", alt: "Vanessa and Hope among the blossom", pos: "object-[50%_28%]" }}>
+    <PageShell title="Our Story" hero={resolvePhoto("hero-our-story", rows)}>
       <Container className="pt-14 sm:pt-20">
         {STORY.slice(0, 2).map((p) => (
           <Paragraph key={p.slice(0, 24)} text={p} />
@@ -28,7 +33,7 @@ export default function OurStoryPage() {
       </Container>
 
       <div className="my-14 sm:my-24">
-        <PhotoBand ratio={1.7773} src="/site/seaside.webp" alt="Vanessa and Hope by the sea" pos="object-[30%_0%]" />
+        <PhotoBand photo={resolvePhoto("story-band-1", rows)} />
       </div>
 
       <Container>
@@ -38,7 +43,7 @@ export default function OurStoryPage() {
       </Container>
 
       <div className="my-14 sm:my-24">
-        <PhotoBand ratio={1.3333} src="/site/lisbon.webp" alt="Vanessa and Hope by a fountain in Lisbon" pos="object-[50%_0%]" />
+        <PhotoBand photo={resolvePhoto("story-band-2", rows)} />
       </div>
 
       <Container wide className="py-6 sm:py-12">

@@ -11,6 +11,8 @@ import { WeddingSiteCard } from "@/components/rsvp/wedding-site-card";
 import { isAdmin } from "@/lib/require-admin";
 import { formatDeadline } from "@/lib/rsvp-deadline";
 import { headers } from "next/headers";
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import { PUBLIC_ORIGIN, hostKind } from "@/lib/hosts";
 import { WEDDING_SITE_URL } from "@/lib/site";
 
@@ -48,6 +50,9 @@ export default async function RsvpPage({
   const { token } = await params;
   const { name, known, open } = await searchParams;
   const preview = token === PREVIEW_TOKEN;
+  const rows = await getSitePhotos();
+  const photo = resolvePhoto("invite-photo", rows);
+  const painting = resolvePhoto("invite-painting", rows);
   // The made-up preview guest is for the planner only; to everyone else it is just an unknown link.
   const party = preview
     ? (await isAdmin())
@@ -86,16 +91,17 @@ export default async function RsvpPage({
         </nav>
       </header>
 
-      {/* One still photo. Replace public/couple/hero.jpg with the original for full quality;
-          the width is capped so a small file isn't stretched into blur on a wide screen. */}
+      {/* One still photo, chosen on the planner's Photos page. The width is capped so a small file isn't
+          stretched into blur on a wide screen. */}
       <div className="relative mx-auto aspect-[4/3] w-full max-w-[658px] sm:aspect-[3/2]">
         <Image
-          src="/couple/hero.jpg"
-          alt="Vanessa and Hope"
+          src={photo.src}
+          alt={photo.alt}
           fill
           priority
           sizes="(min-width: 658px) 658px, 100vw"
-          className="object-cover object-[center_35%]"
+          className="object-cover"
+          style={{ objectPosition: `${photo.focus.x}% ${photo.focus.y}%` }}
         />
       </div>
 
@@ -130,6 +136,7 @@ export default async function RsvpPage({
         deadline={party.deadline ? formatDeadline(party.deadline) : null}
         cookieName={cookieName}
         skip={opened}
+        art={{ src: painting.src, focus: painting.focus }}
       >
         {content}
       </EnvelopeIntro>

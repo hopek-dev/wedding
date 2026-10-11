@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import { Bus, Car, Globe, MapPin, Phone, TrainFront } from "lucide-react";
 import { Container, PageShell, SectionTitle, pill, pillOutline } from "@/components/site/page-shell";
 import { PhotoBand } from "@/components/site/photo-band";
@@ -11,13 +13,16 @@ export const metadata = { title: "Travel" };
 const serif = { fontFamily: "var(--font-cormorant), Georgia, serif" } as const;
 const wayIcons = [Bus, TrainFront, Car];
 
-export default function TravelPage() {
+export const revalidate = 120;
+
+export default async function TravelPage() {
+  const rows = await getSitePhotos();
   const tel = TRAVEL.venuePhone.replace(/[^+\d]/g, "");
   return (
     <PageShell
       title="Travel"
       intro="Everything takes place at one venue."
-      hero={{ src: "/site/venue.webp", alt: "Mulberry House across the lake", pos: "object-[50%_42%]" }}
+      hero={resolvePhoto("hero-travel", rows)}
     >
       <Container className="py-16 sm:py-24">
         <SectionTitle eyebrow="Before you set off">Getting here</SectionTitle>
@@ -28,7 +33,7 @@ export default function TravelPage() {
         </Reveal>
       </Container>
 
-      <PhotoBand ratio={1.7773} src="/site/seaside.webp" alt="Vanessa and Hope by the sea" pos="object-[30%_0%]" />
+      <PhotoBand photo={resolvePhoto("travel-band", rows)} />
 
       <Container className="py-16 sm:py-24">
         <SectionTitle eyebrow={TRAVEL.waysIntro}>Getting to the venue</SectionTitle>

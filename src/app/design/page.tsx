@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { listEvents } from "@/app/actions/events";
@@ -28,12 +30,13 @@ const frame = (width: string, paper?: { bg: string; ink: string }): CSSPropertie
 // The card carries no guest name; ?name= only picks who the envelope preview is for.
 export default async function DesignPage({ searchParams }: { searchParams: Promise<{ name?: string }> }) {
   const { name = "Abigail & Kenneth" } = await searchParams;
-  const [events, deadline] = await Promise.all([listEvents(), getRsvpDeadline()]);
+  const [events, deadline, rows] = await Promise.all([listEvents(), getRsvpDeadline(), getSitePhotos()]);
+  const painting = resolvePhoto("invite-painting", rows);
   const summary = inviteSummary(events);
   const deadlineText = deadline ? formatDeadline(deadline) : null;
   const card = (width: string, paper?: { bg: string; ink: string }) => (
     <div className="design-frame" style={frame(width, paper)}>
-      <InvitationCard summary={summary} deadline={deadlineText} />
+      <InvitationCard summary={summary} deadline={deadlineText} art={{ src: painting.src, focus: painting.focus }} />
     </div>
   );
 

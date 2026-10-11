@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import type { LucideIcon } from "lucide-react";
 import { Beef, Drama, Footprints, Heart, Landmark, Laugh, Music, Sparkles, Ticket, Utensils, Wine } from "lucide-react";
 import { Container, PageShell, SectionTitle } from "@/components/site/page-shell";
@@ -52,12 +54,15 @@ function Entry({ icon: Icon, name, url, text, tag }: { icon: LucideIcon; name: s
   );
 }
 
-export default function OurLondonPage() {
+export const revalidate = 120;
+
+export default async function OurLondonPage() {
+  const rows = await getSitePhotos();
   return (
     <PageShell
       title="Our London"
       intro={LONDON.intro}
-      hero={{ src: "/site/tower-bridge-wide.webp", alt: "Vanessa and Hope in front of Tower Bridge at night", pos: "object-[40%_10%]" }}
+      hero={resolvePhoto("hero-our-london", rows)}
     >
       <Container wide className="py-16 sm:py-24">
         <SectionTitle eyebrow="Eat & drink">{LONDON.favouriteBars.heading}</SectionTitle>
@@ -72,7 +77,7 @@ export default function OurLondonPage() {
         </ul>
       </Container>
 
-      <PhotoBand ratio={1448 / 1086} src="/site/bench.webp" alt="Vanessa and Hope laughing together on a park bench" />
+      <PhotoBand photo={resolvePhoto("london-band", rows)} />
 
       <Container wide className="py-16 sm:py-24">
         <SectionTitle eyebrow="While you’re in town">{LONDON.thingsWeLove.heading}</SectionTitle>

@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import Image from "next/image";
 import { getPublicRegistry } from "@/app/actions/registry";
 import { GiftCard } from "@/components/site/gift-card";
@@ -9,15 +11,17 @@ export const metadata = { title: "Gift List" };
 export const dynamic = "force-dynamic";
 
 export default async function GiftListPage() {
+  const rows = await getSitePhotos();
+  const honeymoon = resolvePhoto("gift-honeymoon", rows);
   const { items } = await getPublicRegistry();
   return (
-    <PageShell title="Gift List" hero={{ src: "/site/lake.webp", alt: "Vanessa and Hope laughing by the lake", pos: "object-[38%_40%]" }}>
+    <PageShell title="Gift List" hero={resolvePhoto("hero-gift-list", rows)}>
       {/* the honeymoon: a thumbnail photo to the left of the message and the button */}
       <Container wide className="py-14 sm:py-20">
         <Reveal>
           <div className="mx-auto grid max-w-4xl items-center gap-8 sm:grid-cols-[minmax(0,20rem)_1fr] sm:gap-12">
             <div className="relative mx-auto aspect-[4/3] w-full max-w-sm overflow-hidden bg-secondary shadow-[0_20px_50px_-28px_rgba(70,62,30,0.5)] ring-1 ring-foreground/10 sm:max-w-none">
-              <Image src="/site/honeymoon.webp" alt="Vanessa and Hope on a boat in the sea" fill sizes="(min-width: 640px) 320px, 90vw" className="object-cover object-[50%_40%]" />
+              <Image src={honeymoon.src} alt={honeymoon.alt} fill sizes="(min-width: 640px) 320px, 90vw" className="object-cover" style={{ objectPosition: `${honeymoon.focus.x}% ${honeymoon.focus.y}%` }} />
             </div>
             <div className="text-center">
               <p className="mx-auto max-w-md leading-relaxed font-light" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "clamp(1.2rem, 2.1vw, 1.55rem)" }}>

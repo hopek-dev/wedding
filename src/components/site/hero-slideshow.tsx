@@ -14,7 +14,7 @@ import { Pause } from "lucide-react";
 export interface Slide {
   src: string;
   alt: string;
-  pos?: string; // CSS object-position, to keep faces in frame
+  focus?: { x: number; y: number }; // which part to keep when cropped, in percent, to keep faces in frame
 }
 
 // How fast the row moves, in pixels per second.
@@ -46,7 +46,8 @@ export function HeroSlideshow({ slides }: { slides: Slide[] }) {
           fill
           priority={copy === 0 && i < 2}
           sizes="(min-width: 768px) 1300px, 130vw"
-          className={`object-cover ${s.pos ?? "object-center"}`}
+          className="object-cover"
+          style={{ objectPosition: `${s.focus?.x ?? 50}% ${s.focus?.y ?? 50}%` }}
         />
       </div>
     ));

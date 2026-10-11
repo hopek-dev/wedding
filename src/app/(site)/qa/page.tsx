@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import { ChevronDown } from "lucide-react";
 import { Container, PageShell } from "@/components/site/page-shell";
 import { Reveal } from "@/components/site/reveal";
@@ -9,6 +11,7 @@ export const metadata = { title: "Q & A" };
 export const revalidate = 300;
 
 export default async function QaPage() {
+  const rows = await getSitePhotos();
   const deadline = await getRsvpDeadline();
   const tel = QA_CONTACT.phone.replace(/[^+\d]/g, "");
   const answerFor = (item: (typeof QA)[number]) => {
@@ -23,7 +26,7 @@ export default async function QaPage() {
     return item.a ?? "";
   };
   return (
-    <PageShell title="Q & A" intro={QA_INTRO} hero={{ src: "/site/palms.webp", alt: "Vanessa and Hope laughing together on a palm-lined beach", pos: "object-[50%_30%]" }}>
+    <PageShell title="Q & A" intro={QA_INTRO} hero={resolvePhoto("hero-qa", rows)}>
       <Container className="py-12 sm:py-20">
         <Reveal>
           <div className="border-b border-foreground/15">

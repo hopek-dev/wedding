@@ -3,16 +3,12 @@ import type { ReactNode } from "react";
 import { OverlapCard } from "@/components/site/overlap-card";
 import { ParallaxImage } from "@/components/site/parallax-image";
 import { Reveal } from "@/components/site/reveal";
+import type { Photo } from "@/lib/site-photos";
 
-export interface PageHero {
-  src: string;
-  alt: string;
-  pos?: string; // object-position class
-  // An upright photo. On a wide screen it is shown whole, at full height and not enlarged, with a soft blurred
-  // copy of itself filling the sides (enlarging it to the screen's width would make it soft and pixelated).
-  portrait?: boolean;
-  ratio?: number; // width / height of an upright photo (default 9:16)
-}
+// The photo for a page's header, from the Photos page (see src/lib/site-photos.ts). A photo that is taller than it is
+// wide is shown whole at full height on a wide screen, with a soft blurred copy of itself filling the sides
+// (enlarging it to the screen's width would make it soft and pixelated).
+export type PageHero = Pick<Photo, "src" | "alt" | "ratio" | "focus">;
 
 // Every wedding page has the same shape, like the welcome page:
 //  1. a full-screen photograph with no text on it (the header floats over it),
@@ -22,24 +18,24 @@ export function PageShell({ title, intro, children, hero }: { title: string; int
   return (
     <>
       <section className="relative isolate h-[100svh] min-h-[520px] overflow-hidden bg-secondary portrait:h-[66svh] portrait:min-h-[440px]" aria-label={hero.alt}>
-        {hero.portrait ? (
+        {hero.ratio < 1 ? (
           <>
             <div className="absolute inset-0 landscape:hidden">
-              <ParallaxImage src={hero.src} alt={hero.alt} pos={hero.pos} priority settle strength={0.04} bleed={4} />
+              <ParallaxImage src={hero.src} alt={hero.alt} focus={hero.focus} priority settle strength={0.04} bleed={4} />
             </div>
             <div className="absolute inset-0 hidden landscape:block">
               <Image src={hero.src} alt="" aria-hidden fill sizes="30vw" className="scale-125 object-cover opacity-90 blur-3xl" />
               {/* the photo's own box, as wide as the photo is at full height, with soft edges so it melts into the blur */}
               <div
                 className="absolute inset-y-0 left-1/2 -translate-x-1/2 [mask-image:linear-gradient(to_right,transparent,black_16%,black_84%,transparent)]"
-                style={{ width: `min(100%, calc(100svh * ${hero.ratio ?? 9 / 16}))` }}
+                style={{ width: `min(100%, calc(100svh * ${hero.ratio}))` }}
               >
                 <Image src={hero.src} alt={hero.alt} fill priority quality={90} sizes="70vw" className="hero-settle object-cover" />
               </div>
             </div>
           </>
         ) : (
-          <ParallaxImage src={hero.src} alt={hero.alt} pos={hero.pos} priority settle strength={0.04} bleed={4} />
+          <ParallaxImage src={hero.src} alt={hero.alt} focus={hero.focus} priority settle strength={0.04} bleed={4} />
         )}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/25 to-transparent" />
         {/* a thin line that draws itself down, hinting that the page continues */}

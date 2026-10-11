@@ -9,7 +9,7 @@ import { useEffect, useRef } from "react";
 export function ParallaxImage({
   src,
   alt,
-  pos = "object-center",
+  focus = { x: 50, y: 50 },
   priority = false,
   settle = false,
   strength = 0.07,
@@ -18,7 +18,7 @@ export function ParallaxImage({
 }: {
   src: string;
   alt: string;
-  pos?: string;
+  focus?: { x: number; y: number }; // which part of the photo to keep when it is cropped, in percent
   priority?: boolean;
   settle?: boolean;
   strength?: number;
@@ -66,7 +66,7 @@ export function ParallaxImage({
   return (
     <div ref={box} className="absolute inset-0 overflow-hidden">
       <div ref={inner} className="absolute inset-x-0 will-change-transform" style={{ top: `-${bleed}%`, bottom: `-${bleed}%` }}>
-        <Image src={src} alt={alt} fill priority={priority} quality={90} sizes={sizes} className={`object-cover ${pos} ${settle ? "hero-settle" : ""}`} />
+        <Image src={src} alt={alt} fill priority={priority} quality={90} sizes={sizes} className={`object-cover ${settle ? "hero-settle" : ""}`} style={{ objectPosition: `${focus.x}% ${focus.y}%` }} />
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+import { getSitePhotos } from "@/app/actions/photos";
+import { resolvePhoto } from "@/lib/site-photos";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Countdown } from "@/components/site/countdown";
@@ -9,18 +11,17 @@ import { VENUE, WEDDING } from "@/lib/site-content";
 
 export const metadata = { title: "Welcome" };
 
-// The rolling hero photos, in the order they appear. Drop a new file in public/site/ and add it here.
-const SLIDES: Slide[] = [
-  { src: "/site/blossom.webp", alt: "Vanessa and Hope among the blossom", pos: "object-[50%_28%]" },
-  { src: "/site/seaside.webp", alt: "Vanessa and Hope by the sea", pos: "object-[45%_40%]" },
-  { src: "/site/lisbon.webp", alt: "Vanessa and Hope by a fountain in Lisbon", pos: "object-[50%_35%]" },
-  { src: "/site/engagement.webp", alt: "Vanessa and Hope, laughing, showing her engagement ring", pos: "object-[58%_0%]" },
-  { src: "/site/tower-bridge-wide.webp", alt: "Vanessa and Hope in front of Tower Bridge at night", pos: "object-[40%_10%]" },
-  { src: "/site/palms.webp", alt: "Vanessa and Hope laughing together on a palm-lined beach", pos: "object-[50%_20%]" },
-  { src: "/site/lake.webp", alt: "Vanessa and Hope laughing by the lake", pos: "object-[38%_30%]" },
-];
+// The rolling hero photos come from the Photos page in the planner (slots welcome-1 to welcome-7).
+const SLIDE_SLOTS = ["welcome-1", "welcome-2", "welcome-3", "welcome-4", "welcome-5", "welcome-6", "welcome-7"];
 
-export default function WelcomePage() {
+export const revalidate = 120;
+
+export default async function WelcomePage() {
+  const rows = await getSitePhotos();
+  const SLIDES: Slide[] = SLIDE_SLOTS.map((id) => {
+    const p = resolvePhoto(id, rows);
+    return { src: p.src, alt: p.alt, focus: p.focus };
+  });
   return (
     <>
       <HeroSlideshow slides={SLIDES} />

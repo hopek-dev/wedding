@@ -1,18 +1,21 @@
 import Image from "next/image";
 import { Reveal } from "@/components/site/reveal";
+import type { Photo } from "@/lib/site-photos";
 
-// A photograph between sections, with no text on it: a moment to look before reading on.
+// A photograph between sections, with no text on it: a moment to look before reading on. Takes a photo from
+// the Photos page (see src/lib/site-photos.ts).
 //
-// A wide photo runs the full width of the page and is as tall as it needs to be (pass the photo's width divided
-// by its height as `ratio`), so it is shown whole. Only if that would be much taller than the screen is it
-// cropped, and then only by a little: the height stops at 1.2 screens. Any cropping is taken off the bottom,
-// so heads at the top of a photo are never cut (pass `pos` to choose a different part to keep).
+// A wide photo runs the full width of the page and is as tall as it needs to be, so it is shown whole. Only if
+// that would be much taller than the screen is it cropped, and then only by a little: the height stops at
+// 1.2 screens. The crop keeps the part chosen on the Photos page (by default the top, so heads are never cut).
 //
-// An upright photo (ratio below 1) is handled differently, because stretching it across a wide screen would
+// An upright photo (taller than wide) is handled differently, because stretching it across a wide screen would
 // enlarge and crop it badly. On an upright screen (a phone) it simply fills the width, whole. On a wide screen
 // it is shown at nearly the full screen height, not enlarged, with a soft blurred copy of itself filling the
 // sides and its edges faded into that.
-export function PhotoBand({ src, alt, ratio, pos = "object-top" }: { src: string; alt: string; ratio: number; pos?: string }) {
+export function PhotoBand({ photo }: { photo: Photo }) {
+  const { src, alt, ratio, focus } = photo;
+  const position = { objectPosition: `${focus.x}% ${focus.y}%` };
   if (ratio < 1) {
     return (
       <Reveal threshold={0}>
@@ -34,7 +37,7 @@ export function PhotoBand({ src, alt, ratio, pos = "object-top" }: { src: string
   return (
     <Reveal threshold={0}>
       <div className="relative w-full overflow-hidden bg-secondary" style={{ aspectRatio: String(ratio), maxHeight: "120svh" }}>
-        <Image src={src} alt={alt} fill sizes="100vw" className={`object-cover ${pos}`} />
+        <Image src={src} alt={alt} fill quality={90} sizes="100vw" className="object-cover" style={position} />
       </div>
     </Reveal>
   );
