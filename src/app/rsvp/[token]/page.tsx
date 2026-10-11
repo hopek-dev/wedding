@@ -1,20 +1,17 @@
 import { cookies } from "next/headers";
-import Image from "next/image";
 import { getInviteeFirstName, getPreviewParty, getRsvpParty } from "@/app/actions/rsvp";
 import { EnvelopeIntro } from "@/components/rsvp/envelope-intro";
-import { GuestTheme } from "@/components/rsvp/guest-theme";
 import { RememberInvite } from "@/components/site/remember-invite";
 import { RsvpForm } from "@/components/rsvp/rsvp-form";
 import { PREVIEW_TOKEN, inviteSummary } from "@/lib/invitation";
 import { partyFirstNames } from "@/lib/party";
-import { WeddingSiteCard } from "@/components/rsvp/wedding-site-card";
+import { PageShell } from "@/components/site/page-shell";
 import { isAdmin } from "@/lib/require-admin";
 import { formatDeadline } from "@/lib/rsvp-deadline";
 import { headers } from "next/headers";
 import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
 import { PUBLIC_ORIGIN, hostKind } from "@/lib/hosts";
-import { WEDDING_SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +48,7 @@ export default async function RsvpPage({
   const { name, known, open } = await searchParams;
   const preview = token === PREVIEW_TOKEN;
   const rows = await getSitePhotos();
-  const photo = resolvePhoto("invite-photo", rows);
+  const hero = resolvePhoto("hero-rsvp", rows);
   const painting = resolvePhoto("invite-painting", rows);
   // The made-up preview guest is for the planner only; to everyone else it is just an unknown link.
   const party = preview
@@ -68,68 +65,37 @@ export default async function RsvpPage({
   const opened = cookieName ? (await cookies()).has(cookieName) : false;
 
   const content = (
-    <div className="min-h-[100dvh] bg-background text-foreground">
-      <GuestTheme />
+    <>
       {party && !preview && <RememberInvite token={token} />}
-      {preview && (
-        <div className="bg-[#3a3a3a] px-4 py-2 text-center text-xs tracking-wide text-[#ffffec]">
-          Preview: this is what your guests see. Replies here aren&apos;t saved.
+      <PageShell title="RSVP" intro={party && party.events.length > 0 ? "Please let us know who can join us." : undefined} hero={hero}>
+        <div className="mx-auto w-full max-w-xl px-4 py-10 pb-16 sm:py-14">
+          {preview && (
+            <div className="mb-6 rounded-md bg-[#3a3a3a] px-4 py-2 text-center text-xs tracking-wide text-[#ffffec]">
+              Preview: this is what your guests see. Replies here aren&apos;t saved.
+            </div>
+          )}
+          {party && party.events.length > 0 ? (
+            <RsvpForm party={party} token={token} preview={preview} />
+          ) : (
+            <div className="rounded-md border bg-card p-8 text-center">
+              <h2 className="text-xl font-medium">{party ? "No invitations yet" : "We couldn't find that invitation"}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {party
+                  ? "Your invitation hasn't been opened yet. Please check back soon."
+                  : "Please use the personal link we sent you, or get in touch with us."}
+              </p>
+            </div>
+          )}
         </div>
-      )}
-      <header className="px-6 pt-12 pb-8 text-center">
-        <h1 className="font-cursive whitespace-nowrap text-5xl leading-tight text-muted-foreground sm:text-7xl">Vanessa &amp; Hope</h1>
-        <nav className="mt-5 flex justify-center gap-7 text-[13px] font-light tracking-wide text-muted-foreground">
-          <span className="border-b border-muted-foreground py-1">RSVP</span>
-          <a
-            href={WEDDING_SITE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border-b border-transparent py-1 transition-colors hover:border-muted-foreground"
-          >
-            Wedding Website ↗
-          </a>
-        </nav>
-      </header>
-
-      {/* One still photo, chosen on the planner's Photos page. The width is capped so a small file isn't
-          stretched into blur on a wide screen. */}
-      <div className="relative mx-auto aspect-[4/3] w-full max-w-[658px] sm:aspect-[3/2]">
-        <Image
-          src={photo.src}
-          alt={photo.alt}
-          fill
-          priority
-          sizes="(min-width: 658px) 658px, 100vw"
-          className="object-cover"
-          style={{ objectPosition: `${photo.focus.x}% ${photo.focus.y}%` }}
-        />
-      </div>
-
-      <div className="mx-auto w-full max-w-xl px-4 py-10 pb-16">
-        {party && party.events.length > 0 ? (
-          <RsvpForm party={party} token={token} preview={preview} />
-        ) : (
-          <div className="rounded-md border bg-card p-8 text-center">
-            <h2 className="text-xl font-medium">
-              {party ? "No invitations yet" : "We couldn't find that invitation"}
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {party
-                ? "Your invitation hasn't been opened yet. Please check back soon."
-                : "Please use the personal link we sent you, or get in touch with us."}
-            </p>
-          </div>
-        )}
-        <WeddingSiteCard className="mt-5" />
-      </div>
-    </div>
+      </PageShell>
+    </>
   );
 
   // Unknown links get the plain page, with no envelope.
-  if (!party || party.events.length === 0) return <div className="-mx-4 -my-6 sm:-mx-6 sm:-my-8">{content}</div>;
+  if (!party || party.events.length === 0) return content;
 
   return (
-    <div className="-mx-4 -my-6 sm:-mx-6 sm:-my-8">
+    <>
       <EnvelopeIntro
         firstName={partyFirstNames(party.members)}
         summary={inviteSummary(party.events)}
@@ -140,6 +106,6 @@ export default async function RsvpPage({
       >
         {content}
       </EnvelopeIntro>
-    </div>
+    </>
   );
 }

@@ -10,7 +10,6 @@ import { submitRsvp, type RsvpParty } from "@/app/actions/rsvp";
 import { EventNames } from "@/components/rsvp/event-names";
 import { inviteSummary } from "@/lib/invitation";
 import { daysUntil, formatDeadline } from "@/lib/rsvp-deadline";
-import { WEDDING_SITE_URL } from "@/lib/site";
 import { STAY_OTHER, STAY_PLACES } from "@/lib/site-content";
 import { guestFullName, type Guest } from "@/lib/supabase/types";
 import { partyFirstNames, partyGreeting } from "@/lib/party";
@@ -146,11 +145,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
           {anyYes ? "We can't wait to celebrate with you." : "We'll miss you, and thank you for letting us know."}
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
-          For the schedule, travel, places to stay and our gift list, visit{" "}
-          <a href={WEDDING_SITE_URL} target="_blank" rel="noopener noreferrer" className="text-foreground underline underline-offset-4">
-            our wedding website
-          </a>
-          .
+          For the schedule, travel, places to stay and our gift list, use the menu at the top of the page.
         </p>
         {party.deadline && !locked ? (
           <p className="mt-4 text-sm text-muted-foreground">
@@ -169,7 +164,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
   return (
     <div className="grid gap-5">
       <div className="rounded-md border bg-card p-6 text-center">
-        <h2 className="text-2xl font-light tracking-wide">
+        <h2 className="text-3xl font-light tracking-wide" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
           Hello {partyGreeting(members)}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -213,7 +208,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       </section>
 
       <section className="rounded-md border bg-card p-6">
-        <h3 className="text-lg font-medium tracking-wide">Will you be joining us?</h3>
+        <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Will you be joining us?</h3>
         <div className="mt-4 grid gap-5">
           {party.events.map((event) => {
             const attendees = members.filter((m) => invited(m.id, event.id));
@@ -257,7 +252,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
 
       {openSlots > 0 && !locked && (
         <section className="rounded-md border bg-card p-6">
-          <h3 className="text-lg font-medium tracking-wide">{openSlots === 1 ? "Bringing a plus-one?" : "Bringing guests?"}</h3>
+          <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{openSlots === 1 ? "Bringing a plus-one?" : "Bringing guests?"}</h3>
           <p className="mb-3 text-sm text-muted-foreground">
             Add their name and they&apos;ll be included on your invitation, at the same events you&apos;re attending. Leave
             this blank if you&apos;re coming on your own.
@@ -295,7 +290,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       )}
 
       <section className="rounded-md border bg-card p-6">
-        <h3 className="text-lg font-medium tracking-wide">Dietary requirements</h3>
+        <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Dietary requirements</h3>
         <div className="mt-3 grid gap-3">
           {members.map((m) => (
             <div key={m.id} className="grid gap-1.5">
@@ -313,7 +308,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       </section>
 
       <section className="rounded-md border bg-card p-6">
-        <h3 className="text-lg font-medium tracking-wide">Where will you be staying?</h3>
+        <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Where will you be staying?</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Optional. It helps us plan lifts and the end of the night.{" "}
           <a href="/places-to-stay" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">

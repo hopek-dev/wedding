@@ -37,7 +37,7 @@ export const SLOTS: SlotDef[] = [
   { id: "hero-places-to-stay", group: H, label: "Places to Stay", page: "/places-to-stay", src: "/site/venue.webp", width: 1000, height: 667, focus: { x: 50, y: 42 }, alt: "Mulberry House across the lake" },
   { id: "hero-qa", group: H, label: "Q & A", page: "/qa", src: "/site/palms.webp", width: 1407, height: 1118, focus: { x: 50, y: 30 }, alt: "Vanessa and Hope laughing together on a palm-lined beach" },
   { id: "hero-gift-list", group: H, label: "Gift List", page: "/gift-list", src: "/site/lake.webp", width: 1640, height: 959, focus: { x: 38, y: 40 }, alt: "Vanessa and Hope laughing by the lake" },
-  { id: "hero-rsvp", group: H, label: "RSVP", page: "/rsvp", src: "/site/kiss.webp", width: 1536, height: 864, focus: { x: 50, y: 0 }, alt: "Hope kissing Vanessa on the cheek as she smiles" },
+  { id: "hero-rsvp", group: H, label: "RSVP (also each guest's personal RSVP page)", page: "/rsvp", src: "/site/kiss.webp", width: 1536, height: 864, focus: { x: 50, y: 0 }, alt: "Hope kissing Vanessa on the cheek as she smiles" },
 
   { id: "story-band-1", group: P, label: "Our Story: first photo between the paragraphs", page: "/our-story", src: "/site/seaside.webp", width: 1500, height: 844, focus: { x: 30, y: 0 }, alt: "Vanessa and Hope by the sea" },
   { id: "story-band-2", group: P, label: "Our Story: second photo between the paragraphs", page: "/our-story", src: "/site/lisbon.webp", width: 1448, height: 1086, focus: { x: 50, y: 0 }, alt: "Vanessa and Hope by a fountain in Lisbon" },
@@ -48,7 +48,6 @@ export const SLOTS: SlotDef[] = [
   { id: "gift-honeymoon", group: P, label: "Gift List: honeymoon thumbnail", page: "/gift-list", src: "/site/honeymoon.webp", width: 1448, height: 1086, focus: { x: 50, y: 40 }, alt: "Vanessa and Hope on a boat in the sea" },
 
   { id: "invite-painting", group: I, label: "Invitation: the painting on the card (also in the WhatsApp preview)", page: "/rsvp/preview", src: "/couple/venue-watercolor.webp", width: 1000, height: 750, focus: { x: 50, y: 50 }, alt: "Watercolour painting of Mulberry House" },
-  { id: "invite-photo", group: I, label: "Invitation: photo at the top of the RSVP page", page: "/rsvp/preview", src: "/couple/hero.jpg", width: 1536, height: 864, focus: { x: 50, y: 35 }, alt: "Vanessa and Hope" },
 ];
 
 export const SLOT_BY_ID = new Map(SLOTS.map((s) => [s.id, s]));

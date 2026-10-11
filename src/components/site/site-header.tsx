@@ -17,7 +17,7 @@ const SOLID_AFTER = 60;
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const current = pathname === "/" ? "/welcome" : pathname;
+  const current = pathname === "/" ? "/welcome" : pathname.startsWith("/rsvp") ? "/rsvp" : pathname;
   const [open, setOpen] = useState(false);
   const [solid, setSolid] = useState(false);
 

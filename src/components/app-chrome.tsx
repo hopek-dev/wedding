@@ -12,8 +12,8 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   if (SITE_PATHS.includes(pathname as never) && pathname !== "/rsvp") {
     return <main className="flex-1">{children}</main>;
   }
-  if (pathname === "/rsvp") return <main className="flex-1">{children}</main>;
-  if (pathname.startsWith("/rsvp/") || pathname === "/login") {
+  if (pathname === "/rsvp" || pathname.startsWith("/rsvp/")) return <main className="flex-1">{children}</main>;
+  if (pathname === "/login") {
     return <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>;
   }
   return (
