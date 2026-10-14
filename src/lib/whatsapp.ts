@@ -46,7 +46,7 @@ export function savedInviteTemplate() {
 }
 
 export const DEFAULT_INVITE_TEMPLATE =
-  "Dear {first_name},\n\n💌 *Vanessa & Hope* request the pleasure of your company at their wedding celebrations.\n\nYour personal invitation is waiting for you. Tap to open it and let us know if you can join us:\n{link}\n\nKindly RSVP by {deadline}.\n\nWith love,\nVanessa & Hope";
+  "Dear {first_name},\n\n*Vanessa & Hope* request the pleasure of your company at their wedding celebrations.\n\nYour personal invitation is waiting for you. Tap to open it and let us know if you can join us:\n{link}\n\nKindly RSVP by {deadline}.\n\nWith love,\nVanessa & Hope";
 
 export const DEFAULT_REMINDER_TEMPLATE =
   "Dear {first_name},\n\nA gentle nudge from *Vanessa & Hope*: we haven't had your RSVP yet. It only takes a minute:\n{link}\n\nKindly RSVP by {deadline}.\n\nThank you!";
