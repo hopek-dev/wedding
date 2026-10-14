@@ -9,9 +9,10 @@ export interface SlotDef {
   group: PhotoGroup;
   label: string;
   page: string; // where it appears, as a public path
-  src: string; // the picture that ships with the site
+  src: string | null; // the picture that ships with the site; null = none, so nothing shows until one is uploaded
   width: number;
   height: number;
+  optional?: true; // has no shipped picture (see src)
   focus: { x: number; y: number }; // which part to keep when the photo is cropped, in percent
   alt: string;
 }
@@ -45,6 +46,12 @@ export const SLOTS: SlotDef[] = [
   { id: "london-band", group: P, label: "Our London: photo across the page", page: "/our-london", src: "/site/bench.webp", width: 1448, height: 1086, focus: { x: 50, y: 0 }, alt: "Vanessa and Hope laughing together on a park bench" },
   { id: "schedule-photo-1", group: P, label: "Schedule: bottom photo, left", page: "/schedule", src: "/site/hands-crop.webp", width: 2160, height: 1440, focus: { x: 50, y: 0 }, alt: "Their hands together, with an engagement ring" },
   { id: "schedule-photo-2", group: P, label: "Schedule: bottom photo, right", page: "/schedule", src: "/site/cheers.webp", width: 2316, height: 1737, focus: { x: 50, y: 0 }, alt: "Vanessa and Hope raising a toast" },
+  { id: "stay-mulberry-house", group: P, label: "Places to Stay: Mulberry House", page: "/places-to-stay", src: "/site/venue.webp", width: 1000, height: 667, focus: { x: 50, y: 42 }, alt: "Mulberry House across the lake" },
+  { id: "stay-elmcroft", group: P, label: "Places to Stay: Elmcroft Guest House", page: "/places-to-stay", src: "/site/elmcroft.webp", width: 863, height: 575, focus: { x: 40, y: 45 }, alt: "Elmcroft Guest House and its gardens" },
+  { id: "stay-down-hall", group: P, label: "Places to Stay: Down Hall Hotel & Spa", page: "/places-to-stay", src: "/site/down-hall.webp", width: 900, height: 500, focus: { x: 55, y: 50 }, alt: "Down Hall Hotel & Spa and its formal gardens" },
+  { id: "stay-premier-inn-harlow", group: P, label: "Places to Stay: Premier Inn Harlow East", page: "/places-to-stay", src: "/site/premier-inn.webp", width: 900, height: 500, focus: { x: 40, y: 50 }, alt: "Premier Inn Harlow East" },
+  { id: "stay-ivy-hill", group: P, label: "Places to Stay: Ivy Hill Hotel", page: "/places-to-stay", src: "/site/ivy-hill.webp", width: 720, height: 405, focus: { x: 45, y: 45 }, alt: "Ivy Hill Hotel and its entrance" },
+  { id: "london-experiences", group: P, label: "Our London: photo across the page, at the bottom (under Experiences)", page: "/our-london", src: "/site/experiences.webp", width: 1152, height: 768, focus: { x: 50, y: 40 }, alt: "Vanessa and Hope in green cloaks at a live experience" },
   { id: "gift-honeymoon", group: P, label: "Gift List: honeymoon thumbnail", page: "/gift-list", src: "/site/honeymoon.webp", width: 1448, height: 1086, focus: { x: 50, y: 40 }, alt: "Vanessa and Hope on a boat in the sea" },
 
   { id: "invite-painting", group: I, label: "Invitation: the painting on the card (also in the WhatsApp preview)", page: "/rsvp/preview", src: "/couple/venue-watercolor.webp", width: 1000, height: 750, focus: { x: 50, y: 50 }, alt: "Watercolour painting of Mulberry House" },
@@ -76,6 +83,15 @@ export interface Photo {
 
 const clamp = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
 
+// For a slot that has no shipped picture: the uploaded photo, or null when nothing has been uploaded yet.
+export function resolveOptionalPhoto(slot: string, rows: Record<string, PhotoRow> | undefined): Photo | null {
+  const def = SLOT_BY_ID.get(slot);
+  if (!def) throw new Error(`Unknown photo slot: ${slot}`);
+  const row = rows?.[slot];
+  if (!def.src && !(row?.url && row.width && row.height)) return null;
+  return resolvePhoto(slot, rows);
+}
+
 export function resolvePhoto(slot: string, rows: Record<string, PhotoRow> | undefined): Photo {
   const def = SLOT_BY_ID.get(slot);
   if (!def) throw new Error(`Unknown photo slot: ${slot}`);
@@ -85,7 +101,7 @@ export function resolvePhoto(slot: string, rows: Record<string, PhotoRow> | unde
   const height = replaced ? row!.height! : def.height;
   return {
     slot,
-    src: replaced ? row!.url! : def.src,
+    src: replaced ? row!.url! : (def.src as string),
     alt: row?.alt?.trim() || def.alt,
     width,
     height,

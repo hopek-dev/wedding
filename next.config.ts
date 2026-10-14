@@ -10,6 +10,9 @@ const supabaseHost = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  // Photos are uploaded through server actions. The default limit is 1 MB, which refuses most phone photos;
+  // 4 MB is just under what Vercel accepts. (Photos are also shrunk in the browser before they are sent.)
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   // Photos in public/couple/ get swapped from time to time; a short cache means a
   // replaced photo shows up within a minute instead of hours.
   images: {

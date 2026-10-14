@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addGiftFromLink, deleteRegistryItem, lookupProduct, moveRegistryItem, releaseClaim, saveRegistryItem, uploadRegistryImage } from "@/app/actions/registry";
 import type { RegistryClaim, RegistryItem } from "@/lib/registry";
+import { MAX_UPLOAD_BYTES, prepareImage } from "@/lib/client-image";
 
 interface Draft {
   title: string;
@@ -118,16 +119,23 @@ function ItemForm({ initial, id, onDone, submitLabel }: { initial: Draft; id: st
             accept="image/*"
             className="sr-only"
             onChange={async (e) => {
-              const file = e.target.files?.[0];
+              const picked = e.target.files?.[0];
               e.target.value = "";
-              if (!file) return;
+              if (!picked) return;
               setUploading(true);
-              const fd = new FormData();
-              fd.set("file", file);
-              const r = await uploadRegistryImage(fd);
-              setUploading(false);
-              if (!r.ok) return toast.error(r.error);
-              setD((cur) => ({ ...cur, image_url: r.url }));
+              try {
+                const file = await prepareImage(picked);
+                if (file.size > MAX_UPLOAD_BYTES) return toast.error("That picture is too big to upload. Try a smaller copy, or a JPEG.");
+                const fd = new FormData();
+                fd.set("file", file);
+                const r = await uploadRegistryImage(fd);
+                if (!r.ok) return toast.error(r.error);
+                setD((cur) => ({ ...cur, image_url: r.url }));
+              } catch {
+                toast.error("The upload failed. Please try again.");
+              } finally {
+                setUploading(false);
+              }
             }}
           />
         </label>

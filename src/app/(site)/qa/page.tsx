@@ -38,7 +38,7 @@ export default async function QaPage() {
                   </span>
                   <ChevronDown className="faq-chevron size-5 shrink-0 text-muted-foreground transition-transform duration-500" strokeWidth={1.2} />
                 </summary>
-                <p className="pb-8 text-[15px] leading-[1.85] font-light text-muted-foreground sm:max-w-[90%]">
+                <p className="pb-8 text-[15px] leading-[1.85] font-light text-muted-foreground [font-variant-numeric:lining-nums] sm:max-w-[90%]">
                   {answerFor(item)}
                   {item.kind === "contact" && QA_CONTACT.phone && (
                     <>

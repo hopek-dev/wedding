@@ -1,11 +1,13 @@
 import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
+import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, MapPin, Star } from "lucide-react";
 import { Container, PageShell, SectionTitle, pill, pillOutline } from "@/components/site/page-shell";
 import { Reveal } from "@/components/site/reveal";
 import { StayMap } from "@/components/site/stay-map";
 import { STAY, STAY_PLACES, VENUE } from "@/lib/site-content";
+import { resolveOptionalPhoto } from "@/lib/site-photos";
 
 export const metadata = { title: "Places to Stay" };
 
@@ -32,14 +34,25 @@ export default async function StayPage() {
       <Container wide className="py-16 sm:py-24">
         <SectionTitle eyebrow="Around the venue">Where to stay</SectionTitle>
         <ol className="mx-auto mt-14 max-w-4xl">
-          {STAY_PLACES.map((p, i) => (
+          {STAY_PLACES.map((p, i) => {
+            const photo = resolveOptionalPhoto(`stay-${p.id}`, rows);
+            return (
             <li key={p.id} id={`stay-${p.id}`} className="scroll-mt-28 border-t border-foreground/15 last:border-b">
               <Reveal>
-                <article className="grid gap-6 py-10 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-12">
+                <article className={`grid gap-6 py-10 sm:gap-10 ${photo ? "sm:grid-cols-[13rem_1fr] sm:items-start" : "sm:grid-cols-[1fr_auto] sm:items-center"}`}>
+                  {/* the place's photo (set on the planner's Photos page); no photo, no picture */}
+                  {photo && (
+                    <div className="relative aspect-[3/2] w-full overflow-hidden bg-secondary shadow-[0_18px_44px_-30px_rgba(70,62,30,0.5)] ring-1 ring-foreground/10 sm:aspect-[4/3]">
+                      <Image src={photo.src} alt={photo.alt} fill sizes="(min-width: 640px) 208px, 90vw" className="object-cover" style={{ objectPosition: `${photo.focus.x}% ${photo.focus.y}%` }} />
+                    </div>
+                  )}
                   <div>
                     <div className="flex items-start gap-4">
                       <span className={`mt-1.5 grid size-8 shrink-0 place-items-center rounded-full text-sm font-medium text-white ${p.onSite ? "bg-[#9a7b2f]" : "bg-[#3a3a3a]"}`}>{i + 1}</span>
                       <div>
+                        {p.tag && (
+                          <p className="mb-2 inline-block rounded-full bg-[#9a7b2f] px-3.5 py-1 text-[11px] font-medium tracking-[0.2em] text-white uppercase">{p.tag}</p>
+                        )}
                         <h3 className="text-3xl font-light tracking-[0.08em] uppercase" style={serif}>
                           {p.name}
                         </h3>
@@ -65,14 +78,22 @@ export default async function StayPage() {
                         {p.miles != null ? `${p.miles} miles from the venue` : "At the venue"}
                       </span>
                     </p>
+                    {photo && (
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${p.onSite ? pill : pillOutline} mt-5 gap-2 whitespace-nowrap sm:ml-12`}>
+                        {p.bookLabel} <ExternalLink className="size-4" strokeWidth={1.6} />
+                      </a>
+                    )}
                   </div>
-                  <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${p.onSite ? pill : pillOutline} gap-2 whitespace-nowrap sm:w-64`}>
+                  {!photo && (
+                    <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${p.onSite ? pill : pillOutline} gap-2 whitespace-nowrap sm:w-64`}>
                     {p.bookLabel} <ExternalLink className="size-4" strokeWidth={1.6} />
                   </a>
+                  )}
                 </article>
               </Reveal>
             </li>
-          ))}
+            );
+          })}
         </ol>
 
         <Reveal className="mt-20">

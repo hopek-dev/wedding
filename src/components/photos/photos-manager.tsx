@@ -7,6 +7,7 @@ import { AlertTriangle, Check, ExternalLink, ImagePlus, Loader2, RotateCcw } fro
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { resetSitePhoto, saveSitePhotoMeta, uploadSitePhoto } from "@/app/actions/photos";
+import { MAX_UPLOAD_BYTES, prepareImage } from "@/lib/client-image";
 import { resolvePhoto, SLOTS, type PhotoGroup, type PhotoRow, type SlotDef } from "@/lib/site-photos";
 
 const GROUPS: PhotoGroup[] = ["Welcome page: rolling photos", "Page headers (full screen)", "Photos inside pages", "Invitation (personal RSVP link and WhatsApp preview)"];
@@ -21,7 +22,11 @@ const SHARP_WIDTH: Record<PhotoGroup, number> = {
 
 function Card({ slot, row }: { slot: SlotDef; row: PhotoRow | undefined }) {
   const router = useRouter();
-  const photo = resolvePhoto(slot.id, row ? { [slot.id]: row } : undefined);
+  // A slot with no shipped picture shows nothing on the site until one is uploaded here.
+  const empty = !slot.src && !(row?.url && row.width && row.height);
+  const photo = empty
+    ? { slot: slot.id, src: "", alt: slot.alt, width: 0, height: 0, ratio: 4 / 3, focus: slot.focus }
+    : resolvePhoto(slot.id, row ? { [slot.id]: row } : undefined);
   const [focus, setFocus] = useState(photo.focus);
   const [alt, setAlt] = useState(row?.alt ?? "");
   const [busy, setBusy] = useState<"" | "upload" | "focus" | "alt" | "reset">("");
@@ -29,17 +34,29 @@ function Card({ slot, row }: { slot: SlotDef; row: PhotoRow | undefined }) {
   const replaced = !!row?.url;
   const changed = replaced || row?.focus_x != null || row?.focus_y != null || !!row?.alt;
   const upright = photo.ratio < 1;
-  const soft = photo.width < SHARP_WIDTH[slot.group];
+  const soft = !empty && photo.width < SHARP_WIDTH[slot.group];
 
-  async function upload(f: File) {
+  async function upload(original: File) {
     setBusy("upload");
-    const fd = new FormData();
-    fd.set("file", f);
-    const r = await uploadSitePhoto(slot.id, fd);
-    setBusy("");
-    if (!r.ok) return toast.error(r.error);
-    toast.success(`Photo replaced (${r.width} × ${r.height}). The site shows it within a couple of minutes.`);
-    router.refresh();
+    try {
+      // shrink big phone photos here first: the server only accepts about 4 MB at a time
+      const f = await prepareImage(original);
+      if (f.size > MAX_UPLOAD_BYTES) {
+        toast.error(`That picture is too big to upload (${(f.size / 1e6).toFixed(1)} MB). Try a smaller copy, or a JPEG.`);
+        return;
+      }
+      const fd = new FormData();
+      fd.set("file", f);
+      const r = await uploadSitePhoto(slot.id, fd);
+      if (!r.ok) return toast.error(r.error);
+      toast.success(`Photo replaced (${r.width} × ${r.height}). The site shows it within a couple of minutes.`);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? `The upload failed: ${err.message}` : "The upload failed. Please try again.");
+    } finally {
+      // always release the button, whatever happened
+      setBusy("");
+    }
   }
 
   async function aim(e: React.MouseEvent<HTMLDivElement>) {
@@ -67,12 +84,12 @@ function Card({ slot, row }: { slot: SlotDef; row: PhotoRow | undefined }) {
   }
 
   async function reset() {
-    if (!confirm(`Put back the original photo for "${slot.label}"?`)) return;
+    if (!confirm(slot.src ? `Put back the original photo for "${slot.label}"?` : `Remove the photo for "${slot.label}"?`)) return;
     setBusy("reset");
     const r = await resetSitePhoto(slot.id);
     setBusy("");
     if (!r.ok) return toast.error(r.error);
-    toast.success("Original photo restored.");
+    toast.success(slot.src ? "Original photo restored." : "Photo removed.");
     setFocus(slot.focus);
     setAlt("");
     router.refresh();
@@ -90,6 +107,10 @@ function Card({ slot, row }: { slot: SlotDef; row: PhotoRow | undefined }) {
         {changed && <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">Changed</span>}
       </div>
 
+      {empty ? (
+        <div className="grid aspect-[4/3] w-full max-w-sm place-items-center self-center rounded-md border border-dashed bg-muted/40 text-sm text-muted-foreground">No photo yet. Nothing shows on the site until you upload one.</div>
+      ) : (
+        <>
       {/* Click anywhere on the picture to say which part matters; the site keeps that part when it has to crop. */}
       <div
         onClick={aim}
@@ -107,10 +128,12 @@ function Card({ slot, row }: { slot: SlotDef; row: PhotoRow | undefined }) {
         {busy === "focus" && <Loader2 className="absolute top-2 right-2 size-4 animate-spin text-white" />}
       </div>
       <p className="text-xs text-muted-foreground">Click the picture on the faces. When the site has to crop this photo, it keeps that spot in view. Currently aimed at {focus.x}% across, {focus.y}% down.</p>
+        </>
+      )}
 
-      <p className="text-xs text-muted-foreground">
+      {!empty && <p className="text-xs text-muted-foreground">
         {photo.width} × {photo.height} px{upright ? " · upright photo (shown whole, with a soft surround, on wide screens)" : ""}
-      </p>
+      </p>}
       {soft && (
         <p className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> This photo is on the small side for here, so it can look soft on big screens. A wider original (at least {SHARP_WIDTH[slot.group]} px) would be sharper.
@@ -135,11 +158,11 @@ function Card({ slot, row }: { slot: SlotDef; row: PhotoRow | undefined }) {
           }}
         />
         <Button type="button" onClick={() => file.current?.click()} disabled={busy !== ""}>
-          {busy === "upload" ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} {busy === "upload" ? "Uploading…" : "Replace photo"}
+          {busy === "upload" ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} {busy === "upload" ? "Uploading…" : empty ? "Upload photo" : "Replace photo"}
         </Button>
         {changed && (
           <Button type="button" variant="outline" onClick={reset} disabled={busy !== ""}>
-            {busy === "reset" ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />} Use the original
+            {busy === "reset" ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />} {slot.src ? "Use the original" : "Remove photo"}
           </Button>
         )}
         {busy === "alt" && <Check className="my-auto size-4 text-muted-foreground" />}

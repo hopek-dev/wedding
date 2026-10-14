@@ -1,12 +1,13 @@
 import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
 import type { LucideIcon } from "lucide-react";
-import { Beef, Drama, Footprints, Heart, Landmark, Laugh, Music, Sparkles, Ticket, Utensils, Wine } from "lucide-react";
+import { Beef, Drama, Footprints, Heart, Landmark, Laugh, Music, Sparkles, Ticket, Utensils, Martini } from "lucide-react";
 import { Container, PageShell, SectionTitle } from "@/components/site/page-shell";
 import { LinkedText } from "@/components/site/linked-text";
 import { PhotoBand } from "@/components/site/photo-band";
 import { Reveal } from "@/components/site/reveal";
 import { LONDON } from "@/lib/site-content";
+import { resolveOptionalPhoto } from "@/lib/site-photos";
 
 export const metadata = { title: "Our London" };
 
@@ -37,10 +38,10 @@ function Title({ name, url }: { name: string; url?: string }) {
 }
 
 // One place or thing: an icon, a title and a few words, with a hairline above. No box.
-function Entry({ icon: Icon, name, url, text, tag }: { icon: LucideIcon; name: string; url?: string; text?: string; tag?: string }) {
+function Entry({ icon: Icon, name, url, text, tag, iconClass = "" }: { icon: LucideIcon; name: string; url?: string; text?: string; tag?: string; iconClass?: string }) {
   return (
     <div className="h-full border-t border-foreground/15 pt-8 text-center">
-      <Icon className="mx-auto size-7 text-muted-foreground" strokeWidth={1} />
+      <Icon className={`mx-auto size-7 text-muted-foreground ${iconClass}`} strokeWidth={1} />
       {tag && <p className="mt-4 text-[11px] font-light tracking-[0.3em] text-muted-foreground uppercase">{tag}</p>}
       <div className="mt-4">
         <Title name={name} url={url} />
@@ -58,6 +59,7 @@ export const revalidate = 120;
 
 export default async function OurLondonPage() {
   const rows = await getSitePhotos();
+  const experiencesPhoto = resolveOptionalPhoto("london-experiences", rows);
   return (
     <PageShell
       title="Our London"
@@ -65,12 +67,12 @@ export default async function OurLondonPage() {
       hero={resolvePhoto("hero-our-london", rows)}
     >
       <Container wide className="py-16 sm:py-24">
-        <SectionTitle eyebrow="Eat & drink">{LONDON.favouriteBars.heading}</SectionTitle>
+        <SectionTitle>{LONDON.favouriteBars.heading}</SectionTitle>
         <ul className="mx-auto mt-14 grid max-w-3xl gap-x-16 gap-y-14 sm:grid-cols-2">
           {LONDON.favouriteBars.items.map((it, i) => (
             <li key={it.name}>
               <Reveal className="h-full" delay={i % 2 ? 1 : undefined}>
-                <Entry icon={it.name === "Swift" ? Heart : i % 2 ? Wine : Beef} name={it.name} url={"url" in it ? it.url : undefined} text={it.text} tag={it.name === "Swift" ? "Our first date" : it.name === "Hawksmoor" ? "Our second date" : undefined} />
+                <Entry iconClass={it.name === "Swift" ? "scale-[1.2]" : ""} icon={it.name === "Swift" ? Martini : it.name === "Hawksmoor" ? Heart : Beef} name={it.name} url={"url" in it ? it.url : undefined} text={it.text} tag={it.name === "Swift" ? "Our first date" : it.name === "Hawksmoor" ? "Our second date" : undefined} />
               </Reveal>
             </li>
           ))}
@@ -83,7 +85,7 @@ export default async function OurLondonPage() {
         <SectionTitle eyebrow="While you’re in town">{LONDON.thingsWeLove.heading}</SectionTitle>
         <ul className="mt-14 grid gap-x-14 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
           {LONDON.thingsWeLove.items.map((it, i) => (
-            <li key={it.name} className="sm:[&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1 lg:[&:last-child:nth-child(3n+1)]:col-start-2">
+            <li key={it.name} className={`${i === LONDON.thingsWeLove.items.length - 1 && i % 2 === 0 ? "sm:col-span-2 lg:col-span-1" : ""} ${i === LONDON.thingsWeLove.items.length - 1 && i % 3 === 0 ? "lg:col-start-2" : ""}`}>
               <Reveal className="h-full" delay={(i % 3 === 0 ? undefined : i % 3 === 1 ? 1 : 2) as 1 | 2 | undefined}>
                 <Entry icon={THINGS[it.name] ?? Sparkles} name={it.name} text={it.text} />
               </Reveal>
@@ -91,6 +93,9 @@ export default async function OurLondonPage() {
           ))}
         </ul>
       </Container>
+
+      {/* a photo across the page under the last section; nothing shows if its photo has been removed */}
+      {experiencesPhoto && <PhotoBand photo={experiencesPhoto} />}
     </PageShell>
   );
 }

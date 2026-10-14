@@ -21,7 +21,7 @@ export const mapLink = `https://www.google.com/maps/search/?api=1&query=${VENUE.
 export const mapEmbed = `https://www.google.com/maps?q=${VENUE.lat},${VENUE.lng}&z=14&output=embed`;
 
 export const STORY = [
-  "It began on a Monday evening, 22nd April 2024, in a softly lit bar in Soho. One drink became an evening stroll, and by the time we parted we already knew we weren’t ready to say goodbye.",
+  "It began on a Monday evening, 22 April 2024, in a softly lit bar in Soho. One drink became an evening stroll, and by the time we parted we already knew we weren’t ready to say goodbye.",
   "We swore we’d see each other again on Wednesday. Vanessa, the sensible one of the two of us, gently vetoed it, so we made it Friday instead. Dinner stretched on and on, and neither of us noticed the tables emptying around us, the chairs being turned up, the candles burning low. We were lost in a world of our own making.",
   "After that, we chased every excuse to be together. We walked the canal as the evening light turned to gold, and wandered through as many parks as London could offer. We laughed at comedy shows and sat in the hush of the theatre. We even sat through a very questionable two-person stage drama, which we will never speak of again (sorry to the cast).",
   "It didn’t matter where we were or what we were doing. All that mattered was that we were together.",
@@ -29,7 +29,7 @@ export const STORY = [
 
 // Short questions and answers shown under the story.
 export const STORY_QA: Array<{ q: string; a: string }> = [
-  { q: "What was your most memorable date?", a: "Our second date, at the Hawksmoor. We talked for so long and laughed so hard, we knew then that there was no world where we wouldn’t be together." },
+  { q: "What is your favourite movie?", a: "There are so many: The Great Debaters, Gladiator II, American Gangster... basically anything with Denzel!" },
   { q: "What’s your favourite thing to do together?", a: "DIY, gardening and a quiet evening watching a good show and munching on some popcorn. Well, at least one of us watches the show :P" },
   { q: "Where are you heading for your honeymoon?", a: "Anywhere with gorgeous beaches, or some greenery, or both. Maybe Barbados?" },
   { q: "What’s the best meal you’ve shared together?", a: "7 course dinner at Dvor, Split, Croatia. Simply amazing!" },
@@ -40,13 +40,16 @@ export const STORY_QA: Array<{ q: string; a: string }> = [
 // The Travel page. Edit the wording here.
 export const TRAVEL = {
   gettingHere:
-    "If you are travelling from outside London, or flying into London, the closest airports to the venue are London Stansted Airport and London Luton Airport.",
+    "If you are travelling from outside the UK, the airports closest to the venue are London Stansted Airport and London Luton Airport.",
   waysIntro: "There are plenty of ways to get to Mulberry House!",
   ways: [
-    { title: "Coach", text: "We will have a coach to the venue from a convenient point in the city centre on the day of the wedding." },
+    {
+      title: "Navigation",
+      text: "If using Apple Maps, please use the venue’s address and not the postcode. If you are using Google Maps, CM5 9NL takes you directly to Mulberry. The venue is located on the A414, approximately 100 yards from High Ongar, on the left, as you travel towards Chipping Ongar.",
+    },
     {
       title: "Train",
-      text: "If you fancy a bit more adventure, take the Greater Anglia train from London Liverpool Street Station, switch at Shenfield to the Elizabeth line, then switch at Brentwood and take the train to Four Wantz!",
+      text: "You can take the Greater Anglia train from London Liverpool Street Station to Chelmsford and take the 32 bus to High Ongar Church. The venue is an 8 minute walk from there.",
     },
     {
       title: "Car",
@@ -67,12 +70,12 @@ export const TRAVEL = {
 export const LONDON = {
   intro: "Our favourite places and things to do while you’re in town.",
   favouriteBars: {
-    heading: "Our favourite bars and restaurants",
+    heading: "Our Special Spots in the City",
     items: [
       {
         name: "Swift",
         url: "https://soho.barswift.com",
-        text: "We don’t go to many bars, but we had our first date here, so there must be something in the drinks there :P",
+        text: "We don’t go to many bars, but we had our first date here, and returned on the night of our engagement, so there must be something in the air there :)",
       },
       { name: "Hawksmoor", url: "https://thehawksmoor.com", text: "Our second date. We talked for so long and laughed so hard, we knew there was no world where we wouldn’t be together." },
     ],
@@ -88,23 +91,23 @@ export const LONDON = {
         name: "Comedy",
         text: "London is full of comedy clubs with classic British humour. Our favourites are the [Comedy Store](https://london.thecomedystore.co.uk) and [Top Secret Comedy Club](https://topsecretcomedyclub.co.uk).",
       },
-      {
-        name: "Food!",
-        text: "Vanessa likes to eat (yes, Hope wrote this one). If you want street food, be sure to try [Borough Market](https://boroughmarket.org.uk) in London Bridge. If you want to sit down and eat, [Hawksmoor](https://thehawksmoor.com) is one of our favourites.",
-      },
-      {
-        name: "Walks",
-        text: "Walk along the many canals or in the many parks in London. You can stroll around the [South Bank](https://southbank.london), or start a long walk in [Little Venice](https://www.google.com/maps/search/?api=1&query=Little+Venice+London) in West London and walk all the way to the east — or give up half-way, we don’t judge :P",
-      },
+      { name: "Music", text: "We love to escape and discover new artists, and we tend to find them at [Sofar Sounds](https://www.sofarsounds.com) events. We also love small venues such as [The Jazz Cafe](https://thejazzcafe.com) and dancing the night away at [The Piano Works](https://www.pianoworks.bar)." },
       {
         name: "Museums",
         text: "If you have a little nerd in you, the entire city is one big museum. Try the [British Museum](https://www.britishmuseum.org), the [Natural History Museum](https://www.nhm.ac.uk), the [Transport Museum](https://www.ltmuseum.co.uk) and more.",
       },
       {
-        name: "Experiences",
-        text: "Live shows you can step into: [The Traitors – Live Experience](https://www.thetraitorslive.co.uk) and The Cube.",
+        name: "Food!",
+        text: "Vanessa likes to eat (yes, Hope wrote this one). If you want street food, check out [Borough Market](https://boroughmarket.org.uk) in London Bridge or [Seven Dials Market](https://www.sevendialsmarket.com) in Covent Garden. For a quick bite or a spot of brunch, try [Granary Square Brasserie](https://ivycollection.com/restaurants-near-me/the-ivy-london/granary-square-brasserie-kings-cross/) in Kings X (the buttermilk pancakes are a must!), Juliet’s in Tooting for their infamous banana bread with salted espresso butter, and [Branché](https://branchelondon.co.uk) or [Affogato](https://affogato.co.uk) for a full English. For a sit-down meal, [Hawksmoor](https://thehawksmoor.com), [Chakana](https://chakana-restaurant.co.uk/london), [Indian Room](https://www.indianroom.co.uk), [Novikov](https://www.novikovrestaurant.co.uk) or [Kanada-Ya](https://kanada-ya.com) to name a few...",
       },
-      { name: "Music", text: "We love to escape and discover new artists, and we tend to find them at [Sofar Sounds](https://www.sofarsounds.com) events. We also love small venues such as [The Jazz Cafe](https://thejazzcafe.com)." },
+      {
+        name: "Walks",
+        text: "Walk along the many canals or parks in London. You can stroll around the [South Bank](https://southbank.london), or start a long walk in [Little Venice](https://www.google.com/maps/search/?api=1&query=Little+Venice+London) in West London and walk all the way to the East - or give up half-way, we don’t judge!",
+      },
+      {
+        name: "Experiences",
+        text: "Live shows you can step into: [Frameless](https://frameless.com), The Last Days of Pompeii Immersive Exhibition, [The Traitors Live Experience](https://www.thetraitorslive.co.uk) (guess who won 👀), Horizon of Khufu, Life Chronicles and [The Cube](https://bookthecube.com).",
+      },
     ],
   },
 };
@@ -134,6 +137,7 @@ export interface StayPlace {
   url: string;
   bookLabel: string;
   onSite?: boolean;
+  tag?: string; // a small label shown above the name
 }
 
 export const STAY_PLACES: StayPlace[] = [
@@ -152,21 +156,7 @@ export const STAY_PLACES: StayPlace[] = [
     url: process.env.NEXT_PUBLIC_ACCOMMODATION_URL?.trim() || "https://www.secure-hotel-booking.com/d-edge/Mulberry-House-Hotel-Conference-Centre/2MKA/en/DateSelection",
     bookLabel: "Book at the venue",
     onSite: true,
-  },
-  {
-    id: "elmcroft",
-    name: "Elmcroft Guest House",
-    kind: "Guest house · Thornwood, Epping",
-    lat: 51.724902,
-    lng: 0.127428,
-    miles: 4.1,
-    rating: 4.1,
-    ratingOutOf: 5,
-    ratingSource: "Tripadvisor",
-    reviews: 60,
-    blurb: "A friendly, well-reviewed guest house with free parking and wifi.",
-    url: "https://elmcroftepping.co.uk/",
-    bookLabel: "Book direct",
+    tag: "We’re Staying Here",
   },
   {
     id: "down-hall",
@@ -182,6 +172,21 @@ export const STAY_PLACES: StayPlace[] = [
     blurb: "A four-star Victorian country house with a spa and gardens, if you want to make a weekend of it.",
     url: "https://www.booking.com/hotel/gb/downhallhotel.en-gb.html",
     bookLabel: "Book on Booking.com",
+  },
+  {
+    id: "elmcroft",
+    name: "Elmcroft Guest House",
+    kind: "Guest house · Thornwood, Epping",
+    lat: 51.724902,
+    lng: 0.127428,
+    miles: 4.1,
+    rating: 4.1,
+    ratingOutOf: 5,
+    ratingSource: "Tripadvisor",
+    reviews: 60,
+    blurb: "A friendly, well-reviewed guest house with free parking and wifi.",
+    url: "https://elmcroftepping.co.uk/",
+    bookLabel: "Book direct",
   },
   {
     id: "premier-inn-harlow",
@@ -271,7 +276,7 @@ export const QA: Array<{ q: string; a?: string; kind?: "deadline" | "contact" }>
   { q: "Who should I contact if I have questions?", kind: "contact" },
   {
     q: "What will the weather be like?",
-    a: "Welcome to England, everyone coming along! The weather can be a bit unpredictable. Daytime temperatures are usually around 15\u201322\u00b0C, but it can feel cooler in the evenings, so best bring a light jacket or wrap just in case.",
+    a: "Welcome to England, everyone coming along! The weather can be a bit unpredictable. Daytime temperatures range from 8-22\u00b0C, but it can feel cooler in the evenings, so best bring a light jacket or wrap just in case.",
   },
   {
     q: "Is the wedding inside or outside?",

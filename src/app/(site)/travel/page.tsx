@@ -1,6 +1,6 @@
 import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
-import { Bus, Car, Globe, MapPin, Phone, TrainFront } from "lucide-react";
+import { Car, Globe, MapPin, Navigation, Phone, TrainFront } from "lucide-react";
 import { Container, PageShell, SectionTitle, pill, pillOutline } from "@/components/site/page-shell";
 import { PhotoBand } from "@/components/site/photo-band";
 import { Reveal } from "@/components/site/reveal";
@@ -11,7 +11,7 @@ import { mapLink } from "@/lib/site-content";
 export const metadata = { title: "Travel" };
 
 const serif = { fontFamily: "var(--font-cormorant), Georgia, serif" } as const;
-const wayIcons = [Bus, TrainFront, Car];
+const wayIcons = [Navigation, TrainFront, Car];
 
 export const revalidate = 120;
 
@@ -48,7 +48,7 @@ export default async function TravelPage() {
                     <h3 className="mt-5 text-3xl font-light tracking-[0.1em] uppercase" style={serif}>
                       {i + 1}. {w.title}
                     </h3>
-                    <p className="mx-auto mt-3 max-w-xl text-[15px] leading-[1.85] font-light text-muted-foreground">{w.text}</p>
+                    <p className="mx-auto mt-3 max-w-xl text-[15px] leading-[1.85] font-light whitespace-pre-line text-muted-foreground">{w.text}</p>
                   </div>
                 </Reveal>
               </li>

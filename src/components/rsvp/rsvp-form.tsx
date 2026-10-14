@@ -270,10 +270,10 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
 
       {openSlots > 0 && !locked && (
         <section className="rounded-md border bg-card p-6">
-          <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{openSlots === 1 ? "Bringing a plus-one?" : "Bringing guests?"}</h3>
+          <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{openSlots === 1 ? "Your plus-one" : "Your guests"}</h3>
           <p className="mb-3 text-sm text-muted-foreground">
-            Add their name and they&apos;ll be included on your invitation. You can then say which events they&apos;ll be at. Leave
-            this blank if you&apos;re coming on your own.
+            Please add their details so they&apos;re on your invitation, then say which events they&apos;ll be at.
+            {party.deadline ? ` You can come back to this link to add or change them until ${formatDeadline(party.deadline)}.` : " You can come back to this link to add or change them later."}
           </p>
           <div className="grid gap-3">
             {plusOnes.slice(0, openSlots).map((p, i) => (
