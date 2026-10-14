@@ -464,11 +464,11 @@ export function InvitesBoard({
                 <div className="text-lg font-medium">{partyFullName([current.guest, ...current.plusOnes])}</div>
                 <div className="text-sm text-muted-foreground tabular-nums">{current.phone && formatPhone(current.phone)}</div>
               </div>
-              {/* The card WhatsApp shows under the link, generated with this guest's name. */}
+              {/* The picture WhatsApp shows under the link: the closed envelope. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/invite-card"
-                alt={`Invitation card for ${guestFullName(current.guest)}`}
+                src="/couple/envelope-og.jpg"
+                alt="The envelope shown in the link preview"
                 className="w-full rounded-md border"
                 style={{ aspectRatio: "1200 / 630" }}
               />
