@@ -11,7 +11,7 @@ import { APEX_HOST, PLANNER_HOST, PUBLIC_HOST, hostKind } from "@/lib/hosts";
 // This only redirects page visits. Server actions check the session themselves (requireAdmin),
 // because they can be called without going through a page.
 const SITE = /^\/(welcome|our-story|schedule|travel|our-london|places-to-stay|qa|gift-list)$/;
-const GUEST = [SITE, /^\/invite-card$/, /^\/calendar\//, /^\/rsvp(\/|$)/, /^\/couple\//, /^\/site\//, /^\/icon/, /^\/apple-icon/, /^\/manifest\.webmanifest$/];
+const GUEST = [SITE, /^\/invite-card(\.jpg)?$/, /^\/calendar\//, /^\/rsvp(\/|$)/, /^\/couple\//, /^\/site\//, /^\/icon/, /^\/apple-icon/, /^\/manifest\.webmanifest$/];
 const SHARED = [...GUEST, /^\/login$/];
 
 const matches = (list: RegExp[], path: string) => list.some((p) => p.test(path));

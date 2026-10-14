@@ -10,6 +10,10 @@ const supabaseHost = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  // WhatsApp is happiest with a picture address that ends in .jpg, so the invitation card is also served there.
+  async rewrites() {
+    return [{ source: "/invite-card.jpg", destination: "/invite-card" }];
+  },
   // Photos are uploaded through server actions. The default limit is 1 MB, which refuses most phone photos;
   // 4 MB is just under what Vercel accepts. (Photos are also shrunk in the browser before they are sent.)
   experimental: { serverActions: { bodySizeLimit: "4mb" } },

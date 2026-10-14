@@ -21,7 +21,7 @@ const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 export const viewport = { themeColor: "#ffffec" };
 
 // The link preview WhatsApp shows: the title carries the guest's first name and
-// the image (/invite-card, the same for every guest) is the invitation card.
+// the image (/invite-card.jpg, the same for every guest) is the invitation card.
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   // on our own addresses the preview image is always on the public website address
@@ -38,7 +38,8 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
       description,
       siteName: "Vanessa & Hope",
       type: "website",
-      images: [{ url: "/invite-card", width: 1200, height: 630, alt: "Your invitation from Vanessa & Hope" }],
+      url: siteUrl ? new URL(`/rsvp/${token}`, siteUrl).toString() : undefined,
+      images: [{ url: "/invite-card.jpg", secureUrl: siteUrl?.startsWith("https") ? new URL("/invite-card.jpg", siteUrl).toString() : undefined, type: "image/jpeg", width: 1200, height: 630, alt: "Your invitation from Vanessa & Hope" }],
     },
     robots: { index: false, follow: false },
   };

@@ -326,9 +326,6 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
 
       <section className="rounded-md border bg-card p-6">
         <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Dietary requirements</h3>
-        {(members.length > 1 || (openSlots > 0 && !locked)) && (
-          <p className="mt-1 text-sm text-muted-foreground">One box for each person, so we know who needs what.</p>
-        )}
         <div className="mt-3 grid gap-4">
           {members.map((m) => {
             const named = members.length > 1 || (openSlots > 0 && !locked);
