@@ -82,6 +82,12 @@ export function isLocalOrigin(origin: string) {
   return /^https?:\/\/(localhost|127\.|0\.0\.0\.0|192\.168\.|10\.)/.test(origin);
 }
 
+// WhatsApp remembers, for each exact link, whether its preview (title and picture) could be made, and keeps that answer
+// for a long time. A link that was tried while the preview was broken would stay without a picture forever. Every
+// link made here carries this version, so it is a link WhatsApp has never seen. The RSVP page ignores it. Raise the
+// number whenever the preview picture or title changes, so already-sent links can be resent with a fresh preview.
+export const PREVIEW_VERSION = "2";
+
 export function rsvpUrl(token: string) {
-  return `${siteOrigin()}/rsvp/${token}`;
+  return `${siteOrigin()}/rsvp/${token}?v=${PREVIEW_VERSION}`;
 }

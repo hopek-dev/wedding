@@ -38,7 +38,6 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
       description,
       siteName: "Vanessa & Hope",
       type: "website",
-      url: siteUrl ? new URL(`/rsvp/${token}`, siteUrl).toString() : undefined,
       images: [{ url: "/invite-card.jpg", secureUrl: siteUrl?.startsWith("https") ? new URL("/invite-card.jpg", siteUrl).toString() : undefined, type: "image/jpeg", width: 1200, height: 630, alt: "Your invitation from Vanessa & Hope" }],
     },
     robots: { index: false, follow: false },
