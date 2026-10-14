@@ -1,3 +1,4 @@
+import { formatOrdinalDate } from "@/lib/format";
 import { VENUE, WEDDING } from "@/lib/site-content";
 
 // The wedding-day schedule shown on the public website. Times are London local time,
@@ -40,7 +41,7 @@ export const directionsLink = `https://www.google.com/maps/dir/?api=1&destinatio
 
 // "13:30 to 14:00". A finish at midnight on the next day is shown as "00:00" with the day it ends on.
 export function timeRange(item: ScheduleItem) {
-  const next = item.endDate !== item.date ? " (ends " + new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${item.endDate}T00:00:00Z`)) + ")" : "";
+  const next = item.endDate !== item.date ? " (ends " + formatOrdinalDate(new Date(`${item.endDate}T00:00:00Z`), { month: "long", timeZone: "UTC" }) + ")" : "";
   return `${item.start} to ${item.end}${next}`;
 }
 

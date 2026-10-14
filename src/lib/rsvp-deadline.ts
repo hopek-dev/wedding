@@ -2,6 +2,7 @@
 // whole day and close once it is past, judged in London time so the cut-off
 // doesn't depend on where the server runs or where the guest is.
 
+import { formatOrdinalDate } from "@/lib/format";
 const TZ = "Europe/London";
 
 export function todayInLondon(now = new Date()) {
@@ -14,9 +15,7 @@ export function isRsvpClosed(deadline: string | null, now = new Date()) {
 }
 
 export function formatDeadline(deadline: string) {
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
-    new Date(`${deadline}T00:00:00Z`)
-  );
+  return formatOrdinalDate(new Date(`${deadline}T00:00:00Z`), { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
 // Whole days from today until the deadline (0 = last day, negative = closed).

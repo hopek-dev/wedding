@@ -1,3 +1,4 @@
+import { formatOrdinalDate } from "@/lib/format";
 import { guestFullName, type Guest, type WeddingEvent } from "@/lib/supabase/types";
 
 // Helpers shared by the invitation card, the envelope and the link-preview image.
@@ -25,13 +26,7 @@ function formatDay(iso: string | null) {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "Europe/London",
-  }).format(d);
+  return formatOrdinalDate(d, { weekday: "long", month: "long", year: "numeric", timeZone: "Europe/London" });
 }
 
 // Details that haven't been decided yet are left out rather than shown as "TBD".
