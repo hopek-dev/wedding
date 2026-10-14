@@ -17,6 +17,14 @@ const ROW = {
   rsvp: "94.6%",
 } as const;
 
+function ordinalDate(day: string) {
+  const m = day.match(/^(\w+) (\d+) (.+)$/);
+  if (!m) return day;
+  const n = Number(m[2]);
+  const suffix = n % 100 >= 11 && n % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
+  return `${m[1]}, ${n}${suffix} ${m[3]}`;
+}
+
 export function InvitationCard({
   summary,
   deadline,
@@ -26,12 +34,11 @@ export function InvitationCard({
   deadline: string | null;
   art?: { src: string; focus: { x: number; y: number } };
 }) {
-  const date = summary.dates.join(" · ");
-  const venue = summary.venueDetails.map((v) => v.name).join(" · ");
-  const address = summary.venueDetails
-    .map((v) => v.address)
-    .filter(Boolean)
-    .join(" · ");
+  // "Monday 15 March 2027" reads as "Monday, 15th March 2027" on the card.
+  const date = summary.dates.map(ordinalDate).join(" · ");
+  // The venue and county share a line; the country sits on the next one.
+  const venue = summary.venueDetails.map((v) => `${v.name}, Essex`).join(" · ");
+  const address = venue ? "United Kingdom" : "";
 
   return (
     <div className="inv-card">
