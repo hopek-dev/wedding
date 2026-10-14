@@ -28,24 +28,28 @@ export async function getRsvpParty(token: string): Promise<RsvpParty | null> {
   if (!guest) return null;
 
   const { data: plusOnes } = await supabase.from("guests").select("*").eq("plus_one_of", guest.id);
-  // A plus-one who was linked to this guest but never invited to anything is brought up to date first, so the
-  // page asks for their answer too (they are invited to what the guest is invited to).
-  if (plusOnes?.length) await syncPlusOneInvites(supabase, plusOnes.map((p: { id: string }) => p.id)).catch(() => 0);
   const members = [guest as Guest, ...((plusOnes ?? []) as Guest[])];
-  const { data: rsvps } = await supabase
-    .from("guest_rsvps")
-    .select("*")
-    .in("guest_id", members.map((m) => m.id));
-  const { data: events } = await supabase
-    .from("events")
-    .select("*")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
+  // The three lookups that don't depend on each other run together, not one after another: every database call
+  // is a round trip, and the page was spending most of its time waiting for them.
+  const fetchRsvps = () => supabase.from("guest_rsvps").select("*").in("guest_id", members.map((m) => m.id));
+  const [rsvpResult, { data: events }, deadline] = await Promise.all([
+    fetchRsvps(),
+    supabase.from("events").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
+    getRsvpDeadline(),
+  ]);
+  let rsvps = rsvpResult.data;
+  // A plus-one who was linked to this guest but never invited to anything is brought up to date, so the page asks
+  // for their answer too (they are invited to what the guest is invited to). Rare, so only then is it done.
+  const invitedIds = new Set(((rsvps ?? []) as GuestRsvp[]).filter((r) => r.status !== "not_invited").map((r) => r.guest_id));
+  const needsSync = (plusOnes ?? []).some((p: { id: string }) => !invitedIds.has(p.id)) && invitedIds.has(guest.id);
+  if (needsSync) {
+    await syncPlusOneInvites(supabase, (plusOnes ?? []).map((p: { id: string }) => p.id)).catch(() => 0);
+    rsvps = (await fetchRsvps()).data;
+  }
 
   const invitedEventIds = new Set(
     ((rsvps ?? []) as GuestRsvp[]).filter((r) => r.status !== "not_invited").map((r) => r.event_id)
   );
-  const deadline = await getRsvpDeadline();
   return {
     deadline,
     closed: isRsvpClosed(deadline),

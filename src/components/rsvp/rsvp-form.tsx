@@ -272,7 +272,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         <section className="rounded-md border bg-card p-6">
           <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{openSlots === 1 ? "Your plus-one" : "Your guests"}</h3>
           <p className="mb-3 text-sm text-muted-foreground">
-            Please add their details so they&apos;re on your invitation, then say which events they&apos;ll be at.
+            Please add their details so they&apos;re on your invitation, then say which events they&apos;ll be at. Their dietary requirements go in the box below.
             {party.deadline ? ` You can come back to this link to add or change them until ${formatDeadline(party.deadline)}.` : " You can come back to this link to add or change them later."}
           </p>
           <div className="grid gap-3">
@@ -318,16 +318,6 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
                     ))}
                   </div>
                 )}
-                {p.first.trim() && (
-                  <Textarea
-                    className="col-span-2"
-                    rows={2}
-                    value={p.diet}
-                    placeholder={`Dietary requirements for ${p.first.trim()} (optional)`}
-                    aria-label={`Dietary requirements for ${p.first.trim()}`}
-                    onChange={(e) => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)))}
-                  />
-                )}
               </div>
             ))}
           </div>
@@ -336,19 +326,50 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
 
       <section className="rounded-md border bg-card p-6">
         <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Dietary requirements</h3>
-        <div className="mt-3 grid gap-3">
-          {members.map((m) => (
-            <div key={m.id} className="grid gap-1.5">
-              {members.length > 1 && <span className="text-sm font-medium">{guestFullName(m)}</span>}
-              <Textarea
-                rows={2}
-                disabled={locked}
-                value={dietary[m.id] ?? ""}
-                onChange={(e) => setDietary((d) => ({ ...d, [m.id]: e.target.value }))}
-                placeholder="Allergies, vegetarian, halal..."
-              />
-            </div>
-          ))}
+        {(members.length > 1 || (openSlots > 0 && !locked)) && (
+          <p className="mt-1 text-sm text-muted-foreground">One box for each person, so we know who needs what.</p>
+        )}
+        <div className="mt-3 grid gap-4">
+          {members.map((m) => {
+            const named = members.length > 1 || (openSlots > 0 && !locked);
+            return (
+              <div key={m.id} className="grid gap-1.5">
+                {named && (
+                  <span className="text-sm font-medium">
+                    {guestFullName(m)}
+                    {m.id === party.guest.id && <span className="font-normal text-muted-foreground"> (you)</span>}
+                  </span>
+                )}
+                <Textarea
+                  rows={2}
+                  disabled={locked}
+                  value={dietary[m.id] ?? ""}
+                  onChange={(e) => setDietary((d) => ({ ...d, [m.id]: e.target.value }))}
+                  placeholder="Allergies, vegetarian, halal..."
+                  aria-label={`Dietary requirements for ${guestFullName(m)}`}
+                />
+              </div>
+            );
+          })}
+          {/* the plus-one who is still to be named: their own box, clearly theirs, ready once they have a name */}
+          {!locked &&
+            plusOnes.slice(0, openSlots).map((p, i) => {
+              const who = [p.first.trim(), p.last.trim()].filter(Boolean).join(" ");
+              const label = who ? `${who} (your plus-one)` : openSlots === 1 ? "Your plus-one" : `Your guest ${i + 1}`;
+              return (
+                <div key={`slot-${i}`} className="grid gap-1.5">
+                  <span className="text-sm font-medium">{label}</span>
+                  <Textarea
+                    rows={2}
+                    disabled={!p.first.trim()}
+                    value={p.diet}
+                    placeholder={p.first.trim() ? "Allergies, vegetarian, halal..." : "Add their name above first, then their dietary requirements here"}
+                    aria-label={`Dietary requirements for ${who || label}`}
+                    onChange={(e) => setPlusOnes((cur) => cur.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)))}
+                  />
+                </div>
+              );
+            })}
         </div>
       </section>
 

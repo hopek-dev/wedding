@@ -9,6 +9,7 @@ import { PageShell } from "@/components/site/page-shell";
 import { isAdmin } from "@/lib/require-admin";
 import { formatDeadline } from "@/lib/rsvp-deadline";
 import { headers } from "next/headers";
+import { isPreviewBot } from "@/lib/crawlers";
 import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
 import { PUBLIC_ORIGIN, hostKind } from "@/lib/hosts";
@@ -51,11 +52,21 @@ export default async function RsvpPage({
   searchParams: Promise<{ name?: string; known?: string; open?: string }>;
 }) {
   const { token } = await params;
+  // Link-preview robots only read the title and picture (see generateMetadata), and give up quickly, so they get a
+  // tiny page and none of the real page's database work.
+  if (isPreviewBot((await headers()).get("user-agent"))) {
+    return (
+      <div className="mx-auto max-w-xl px-5 py-24 text-center">
+        <h1 className="text-3xl font-light tracking-[0.1em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
+          You&apos;re invited
+        </h1>
+        <p className="mt-4 text-muted-foreground">Vanessa &amp; Hope</p>
+      </div>
+    );
+  }
   const { name, known, open } = await searchParams;
   const preview = token === PREVIEW_TOKEN;
-  const rows = await getSitePhotos();
-  const hero = resolvePhoto("hero-rsvp", rows);
-  const painting = resolvePhoto("invite-painting", rows);
+  const rowsPromise = getSitePhotos(); // started now so it runs alongside the invitation lookup below
   // The made-up preview guest is for the planner only; to everyone else it is just an unknown link.
   const party = preview
     ? (await isAdmin())
@@ -65,6 +76,9 @@ export default async function RsvpPage({
         })
       : null
     : await getRsvpParty(token);
+  const rows = await rowsPromise;
+  const hero = resolvePhoto("hero-rsvp", rows);
+  const painting = resolvePhoto("invite-painting", rows);
 
   // Guests who have already opened their envelope go straight to the page.
   const cookieName = preview ? null : `opened-${token.slice(0, 16)}`;
