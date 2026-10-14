@@ -21,7 +21,7 @@ export const mapLink = `https://www.google.com/maps/search/?api=1&query=${VENUE.
 export const mapEmbed = `https://www.google.com/maps?q=${VENUE.lat},${VENUE.lng}&z=14&output=embed`;
 
 export const STORY = [
-  "It began on a Monday evening, 22 April 2024, in a softly lit bar in Soho. One drink became another, and by the time we parted, we already knew we weren’t ready to say goodbye.",
+  "It began on a Monday evening, 22nd April 2024, in a softly lit bar in Soho. One drink became an evening stroll, and by the time we parted we already knew we weren’t ready to say goodbye.",
   "We swore we’d see each other again on Wednesday. Vanessa, the sensible one of the two of us, gently vetoed it, so we made it Friday instead. Dinner stretched on and on, and neither of us noticed the tables emptying around us, the chairs being turned up, the candles burning low. We were lost in a world of our own making.",
   "After that, we chased every excuse to be together. We walked the canal as the evening light turned to gold, and wandered through as many parks as London could offer. We laughed at comedy shows and sat in the hush of the theatre. We even sat through a very questionable two-person stage drama, which we will never speak of again (sorry to the cast).",
   "It didn’t matter where we were or what we were doing. All that mattered was that we were together.",
