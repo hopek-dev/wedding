@@ -153,6 +153,7 @@ async function runSubmitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
   accommodation?: string;
+  songs?: Record<string, string>; // guest id -> the song that gets them dancing
   newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string; answers?: Array<{ event_id: string; attending: boolean }> }>;
 }) {
   const party = await getRsvpParty(input.token);
@@ -251,6 +252,12 @@ async function runSubmitRsvp(input: {
       .in("id", [...memberIds]);
   }
 
+  // Song requests. Kept separate (like accommodation) so a database that hasn't had migration 0013 still saves the RSVP.
+  for (const [guestId, song] of Object.entries(input.songs ?? {})) {
+    if (!memberIds.has(guestId)) continue;
+    await supabase.from("guests").update({ song_request: song.trim().slice(0, 200) || null }).eq("id", guestId);
+  }
+
   revalidatePath("/");
   revalidatePath("/guests");
   revalidatePath("/seating");
@@ -265,6 +272,7 @@ export async function submitRsvp(input: {
   token: string;
   answers: RsvpAnswer[];
   accommodation?: string;
+  songs?: Record<string, string>; // guest id -> the song that gets them dancing
   newPlusOnes?: Array<{ first_name: string; last_name?: string; dietary_notes?: string; answers?: Array<{ event_id: string; attending: boolean }> }>;
 }): Promise<SubmitRsvpResult> {
   try {

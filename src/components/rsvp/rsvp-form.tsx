@@ -40,6 +40,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
       ])
     )
   );
+  const [songs, setSongs] = useState<Record<string, string>>(() => Object.fromEntries(party.members.map((m) => [m.id, m.song_request ?? ""])));
   // Plus-ones the guest adds on this page. They are saved straight away, so they
   // appear in the reply list below without reloading.
   const [extra, setExtra] = useState<Guest[]>([]);
@@ -124,7 +125,7 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
           dietary_notes: p.diet.trim() || undefined,
           answers: hostEvents.flatMap((e) => (effective(p, e.id) ? [{ event_id: e.id, attending: effective(p, e.id) === "yes" }] : [])),
         }));
-      const result = await submitRsvp({ token, answers, accommodation, newPlusOnes });
+      const result = await submitRsvp({ token, answers, accommodation, songs, newPlusOnes });
       if (!result.ok) {
         toast.error(result.error);
         return;
@@ -367,6 +368,34 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
                 </div>
               );
             })}
+        </div>
+      </section>
+
+      <section className="rounded-md border bg-card p-6">
+        <h3 className="text-xl font-light tracking-[0.08em] uppercase" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>What song will get you dancing?</h3>
+        <div className="mt-3 grid gap-4">
+          {members.map((m) => {
+            const named = members.length > 1;
+            return (
+              <div key={m.id} className="grid gap-1.5">
+                {named && (
+                  <span className="text-sm font-medium">
+                    {guestFullName(m)}
+                    {m.id === party.guest.id && <span className="font-normal text-muted-foreground"> (you)</span>}
+                  </span>
+                )}
+                <Textarea
+                  rows={2}
+                  disabled={locked}
+                  maxLength={200}
+                  value={songs[m.id] ?? ""}
+                  onChange={(e) => setSongs((d) => ({ ...d, [m.id]: e.target.value }))}
+                  placeholder="A song and artist..."
+                  aria-label={`The song that will get ${guestFullName(m)} dancing`}
+                />
+              </div>
+            );
+          })}
         </div>
       </section>
 

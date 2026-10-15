@@ -36,6 +36,7 @@ export interface Guest {
   invite_sent_at: string | null;
   invite_channel: string | null;
   accommodation?: string | null; // migration 0009
+  song_request?: string | null; // migration 0013
   notes: string | null;
   created_at: string;
   updated_at: string;

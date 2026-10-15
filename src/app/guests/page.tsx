@@ -121,6 +121,7 @@ export default async function GuestsPage() {
                   <TableCell data-label="Contact" className="text-muted-foreground">
                     <div>{guest.email}</div>
                     <div>{guest.phone}</div>
+                    {guest.song_request && <div className="text-xs">Song: {guest.song_request}</div>}
                     {stayLabel(guest.accommodation) && <div className="text-xs">Staying: {stayLabel(guest.accommodation)}</div>}
                     {guest.last_emailed_at && (
                       <div className="text-xs">Emailed {formatDate(guest.last_emailed_at)}</div>
