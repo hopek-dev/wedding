@@ -235,10 +235,9 @@ export function stayLabel(id: string | null | undefined) {
 export const GIFTS = {
   message:
     "Your presence is the best gift we could ask for! But if you’re feeling generous, you can contribute towards our honeymoon :)",
-  // Where cash gifts go. UK guests pay by Monzo (a bank-transfer link, no fee to give); guests abroad use PayPal
-  // "Friends & Family". Neither link reports back to this site: the gifts show up in those accounts.
-  monzoUrl: "https://monzo.me/hopetettey?h=VZyBGi&account_type=personal",
-  paypalUrl: "https://paypal.me/HopeKTettey",
+  // Where cash gifts go: a Monzo link that works for everyone. It doesn't report back to this site; the gifts show
+  // up in the Monzo account.
+  monzoUrl: "https://monzo.me/vanessahaughton?h=fVwWDt&account_type=personal",
   // Where gifts bought from the registry are delivered.
   deliveryAddress: ["36 Oxford Close", "Mitcham", "Surrey", "CR4 1DY", "United Kingdom"],
 };
