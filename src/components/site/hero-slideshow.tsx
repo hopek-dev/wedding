@@ -49,6 +49,9 @@ export function HeroSlideshow({ slides }: { slides: Slide[] }) {
           alt={copy === 0 ? s.alt : ""}
           fill
           priority={copy === 0 && i < 2}
+          // the first row loads up front (after the first two), so a photo is ready before it slides into view
+          loading={copy === 0 ? "eager" : "lazy"}
+          fetchPriority={copy === 0 && i < 2 ? "high" : "low"}
           sizes="(min-width: 768px) 1300px, 130vw"
           className="object-cover"
           style={{ objectPosition: `${s.focus?.x ?? 50}% ${s.focus?.y ?? 50}%` }}
