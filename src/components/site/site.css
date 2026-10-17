@@ -43,7 +43,11 @@ details.faq[open] .faq-chevron { transform: rotate(180deg); }
 
 /* Hero photographs ease in from a slight zoom when a page opens. */
 @keyframes hero-settle { from { transform: scale(1.13); } to { transform: scale(1); } }
-.hero-settle { animation: hero-settle 1.6s cubic-bezier(0.16, 0.6, 0.2, 1) both; }
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .hero-photo { opacity: 0; }
+  .hero-photo.is-loaded { opacity: 1; animation: hero-settle 1.6s cubic-bezier(0.16, 0.6, 0.2, 1) both, hero-fade 0.7s ease both; }
+}
+@keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* The thin line at the bottom of each hero: it draws down, then wipes away, and repeats. */
 @keyframes scroll-cue { 0% { transform: translateX(-50%) scaleY(0); transform-origin: top; } 45% { transform: translateX(-50%) scaleY(1); transform-origin: top; } 55% { transform: translateX(-50%) scaleY(1); transform-origin: bottom; } 100% { transform: translateX(-50%) scaleY(0); transform-origin: bottom; } }
@@ -75,7 +79,7 @@ details.faq[open] .faq-chevron { transform: rotate(180deg); }
 .scroll-cue { animation: scroll-cue 2.6s cubic-bezier(0.6, 0, 0.3, 1) infinite; background: rgba(255,255,255,0.8) !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-settle, .scroll-cue { animation: none; }
+  .hero-settle, .hero-photo, .scroll-cue { animation: none; }
   .scroll-cue { transform: translateX(-50%); }
   .page-arrive { animation: none; }
   .page-leaving { transition: none; }

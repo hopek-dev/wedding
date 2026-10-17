@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { HeroPhoto } from "@/components/site/hero-photo";
 import { OverlapCard } from "@/components/site/overlap-card";
 import { ParallaxImage } from "@/components/site/parallax-image";
 import { Reveal } from "@/components/site/reveal";
@@ -30,7 +31,7 @@ export function PageShell({ title, intro, children, hero }: { title: string; int
                 className="absolute inset-y-0 left-1/2 -translate-x-1/2 [mask-image:linear-gradient(to_right,transparent,black_16%,black_84%,transparent)]"
                 style={{ width: `min(100%, calc(100svh * ${hero.ratio}))` }}
               >
-                <Image src={hero.src} alt={hero.alt} fill priority quality={90} sizes="70vw" className="hero-settle object-cover" />
+                <HeroPhoto src={hero.src} alt={hero.alt} fill priority quality={90} sizes="70vw" className="object-cover" />
               </div>
             </div>
           </>

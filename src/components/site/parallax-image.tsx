@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { HeroPhoto } from "@/components/site/hero-photo";
 import { useEffect, useRef } from "react";
 
 // A photograph that fills its box edge to edge and drifts a little slower than the page as you scroll,
@@ -66,7 +67,11 @@ export function ParallaxImage({
   return (
     <div ref={box} className="absolute inset-0 overflow-hidden">
       <div ref={inner} className="absolute inset-x-0 will-change-transform" style={{ top: `-${bleed}%`, bottom: `-${bleed}%` }}>
-        <Image src={src} alt={alt} fill priority={priority} quality={90} sizes={sizes} className={`object-cover ${settle ? "hero-settle" : ""}`} style={{ objectPosition: `${focus.x}% ${focus.y}%` }} />
+        {settle ? (
+          <HeroPhoto src={src} alt={alt} fill priority={priority} quality={90} sizes={sizes} className="object-cover" style={{ objectPosition: `${focus.x}% ${focus.y}%` }} />
+        ) : (
+          <Image src={src} alt={alt} fill priority={priority} quality={90} sizes={sizes} className="object-cover" style={{ objectPosition: `${focus.x}% ${focus.y}%` }} />
+        )}
       </div>
     </div>
   );
