@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { OpeningInvitation } from "@/components/site/opening-invitation";
 import { jumpToTop } from "@/components/site/smooth-scroll";
 
 // Smooth moves between pages of the wedding site.
@@ -25,6 +26,15 @@ export function PageTransition({ children }: { children: ReactNode }) {
   const box = useRef<HTMLDivElement>(null);
   const leaving = useRef(false);
   const arrived = useRef<(() => void) | null>(null);
+  // The guest's own invitation is slow to build, so the moment they ask for it we say that it is coming (the
+  // dissolve can't show anything while it waits, which is why this page change skips it).
+  const [openingTo, setOpeningTo] = useState<string | null>(null);
+  const opening = openingTo !== null && pathname !== openingTo;
+  useEffect(() => {
+    if (!openingTo) return;
+    const giveUp = window.setTimeout(() => setOpeningTo(null), 20000); // never leave the message up for ever
+    return () => window.clearTimeout(giveUp);
+  }, [openingTo]);
 
   // the new page has arrived
   useEffect(() => {
@@ -51,10 +61,29 @@ export function PageTransition({ children }: { children: ReactNode }) {
       if (url.origin !== location.origin || url.pathname === location.pathname) return;
       if (url.pathname.startsWith("/calendar/")) return;
       e.preventDefault();
-      if (leaving.current) return;
       e.stopPropagation(); // we do the navigation ourselves
-      leaving.current = true;
+      // A guest who has opened their invitation before goes straight to it: the RSVP link would otherwise go to
+      // /rsvp and be redirected, an extra trip. (src/proxy.ts does the same for a link opened in a new tab.)
+      if (url.pathname === "/rsvp") {
+        const mine = document.cookie.match(/(?:^|; )my-invite=([a-f0-9]{8,64})(?:;|$)/i)?.[1];
+        if (mine) url.pathname = `/rsvp/${mine}`;
+      }
       const target = url.pathname + url.search + url.hash;
+      if (url.pathname === location.pathname) return; // already on the guest's invitation
+      // Another page is still on its way: go where the visitor has just asked to go instead of ignoring the click
+      // (the newest click wins), so moving on never has to wait for the page before it.
+      if (leaving.current) {
+        setOpeningTo(url.pathname.startsWith("/rsvp/") ? url.pathname : null);
+        router.push(target);
+        return;
+      }
+      leaving.current = true;
+      if (url.pathname.startsWith("/rsvp/")) {
+        setOpeningTo(url.pathname);
+        router.push(target);
+        return;
+      }
+      setOpeningTo(null);
 
       if (doc.startViewTransition) {
         let transition: ReturnType<NonNullable<ViewTransitionDoc["startViewTransition"]>>;
@@ -117,8 +146,15 @@ export function PageTransition({ children }: { children: ReactNode }) {
   }, [router]);
 
   return (
-    <div ref={box} key={pathname} className="page-arrive">
-      {children}
-    </div>
+    <>
+      <div ref={box} key={pathname} className="page-arrive">
+        {children}
+      </div>
+      {opening && (
+        <div className="fixed inset-0 z-[35] grid place-items-center bg-background px-6" style={{ animation: "hero-fade 0.2s ease both" }}>
+          <OpeningInvitation />
+        </div>
+      )}
+    </>
   );
 }
