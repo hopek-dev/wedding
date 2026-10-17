@@ -6,7 +6,7 @@ import { Reveal } from "@/components/site/reveal";
 import { GIFTS } from "@/lib/site-content";
 
 export const metadata = { title: "Gift List" };
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export default async function GiftListPage() {
   const rows = await getSitePhotos();
