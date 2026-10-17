@@ -1,9 +1,7 @@
 import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
 import Image from "next/image";
-import { getPublicRegistry } from "@/app/actions/registry";
-import { GiftCard } from "@/components/site/gift-card";
-import { Container, PageShell, SectionTitle, pill } from "@/components/site/page-shell";
+import { Container, PageShell, pill } from "@/components/site/page-shell";
 import { Reveal } from "@/components/site/reveal";
 import { GIFTS } from "@/lib/site-content";
 
@@ -13,7 +11,6 @@ export const dynamic = "force-dynamic";
 export default async function GiftListPage() {
   const rows = await getSitePhotos();
   const honeymoon = resolvePhoto("gift-honeymoon", rows);
-  const { items } = await getPublicRegistry();
   return (
     <PageShell title="Gift List" hero={resolvePhoto("hero-gift-list", rows)}>
       {/* the honeymoon: a thumbnail photo to the left of the message and the button */}
@@ -38,34 +35,6 @@ export default async function GiftListPage() {
         </Reveal>
       </Container>
 
-      {items.length > 0 && (
-        <Container wide className="pb-10">
-          <SectionTitle eyebrow="Or choose something from our list">Our list</SectionTitle>
-          <Reveal>
-            <p className="mx-auto mt-6 mb-12 max-w-md text-center text-[15px] leading-relaxed font-light text-muted-foreground">
-              Buy a gift from the shop, then tap &ldquo;I&rsquo;ve bought this&rdquo; so no one doubles up.
-            </p>
-            <div className="mx-auto -mt-6 mb-12 max-w-sm text-center text-[15px] leading-relaxed font-light">
-              <p className="text-muted-foreground">Please have gifts sent to:</p>
-              <address className="mt-1 not-italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "1.25rem" }}>
-                {GIFTS.deliveryAddress.map((part, i) => (
-                  <span key={part}>
-                    {i > 0 && ", "}
-                    <span className="whitespace-nowrap">{part}</span>
-                  </span>
-                ))}
-              </address>
-            </div>
-          </Reveal>
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((it) => (
-              <li key={it.id}>
-                <GiftCard item={it} />
-              </li>
-            ))}
-          </ul>
-        </Container>
-      )}
     </PageShell>
   );
 }

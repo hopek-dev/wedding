@@ -238,8 +238,6 @@ export const GIFTS = {
   // Where cash gifts go: a Monzo link that works for everyone. It doesn't report back to this site; the gifts show
   // up in the Monzo account.
   monzoUrl: "https://monzo.me/vanessahaughton?h=fVwWDt&account_type=personal",
-  // Where gifts bought from the registry are delivered.
-  deliveryAddress: ["36 Oxford Close", "Mitcham", "Surrey", "CR4 1DY", "United Kingdom"],
 };
 
 // The Q & A page. The RSVP deadline answer is filled in from the planner's deadline setting
