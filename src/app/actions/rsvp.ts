@@ -24,20 +24,27 @@ export interface RsvpParty {
 export async function getRsvpParty(token: string): Promise<RsvpParty | null> {
   if (!/^[a-f0-9]{8,64}$/i.test(token)) return null;
   const supabase = createServiceClient();
-  const { data: guest } = await supabase.from("guests").select("*").eq("rsvp_token", token).maybeSingle();
-  if (!guest) return null;
-
-  const { data: plusOnes } = await supabase.from("guests").select("*").eq("plus_one_of", guest.id);
-  const members = [guest as Guest, ...((plusOnes ?? []) as Guest[])];
-  // The three lookups that don't depend on each other run together, not one after another: every database call
-  // is a round trip, and the page was spending most of its time waiting for them.
-  const fetchRsvps = () => supabase.from("guest_rsvps").select("*").in("guest_id", members.map((m) => m.id));
-  const [rsvpResult, { data: events }, deadline] = await Promise.all([
-    fetchRsvps(),
+  // One round trip for everything about the invitation: the guest, their plus-ones and everyone's answers come back
+  // together, alongside the events and the deadline. (Every database call is a trip, and the page used to make three
+  // in a row before it could show anything.)
+  type Embedded = Guest & { guest_rsvps: GuestRsvp[]; plus_ones: Array<Guest & { guest_rsvps: GuestRsvp[] }> };
+  const [guestResult, { data: events }, deadline] = await Promise.all([
+    supabase.from("guests").select("*, plus_ones:guests!plus_one_of(*, guest_rsvps(*)), guest_rsvps(*)").eq("rsvp_token", token).maybeSingle(),
     supabase.from("events").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
     getRsvpDeadline(),
   ]);
-  let rsvps = rsvpResult.data;
+  const found = guestResult.data as Embedded | null;
+  if (!found) return null;
+  const { plus_ones: embeddedPlusOnes, guest_rsvps: ownRsvps, ...guestFields } = found;
+  const guest = guestFields as Guest;
+  const plusOnes = (embeddedPlusOnes ?? []).map((p) => {
+    const row: Partial<typeof p> = { ...p };
+    delete row.guest_rsvps; // their answers are gathered above
+    return row as Guest;
+  });
+  const members = [guest, ...plusOnes];
+  const fetchRsvps = () => supabase.from("guest_rsvps").select("*").in("guest_id", members.map((m) => m.id));
+  let rsvps: GuestRsvp[] | null = [...(ownRsvps ?? []), ...(embeddedPlusOnes ?? []).flatMap((p) => p.guest_rsvps ?? [])];
   // A plus-one who was linked to this guest but never invited to anything is brought up to date, so the page asks
   // for their answer too (they are invited to what the guest is invited to). Rare, so only then is it done.
   const invitedIds = new Set(((rsvps ?? []) as GuestRsvp[]).filter((r) => r.status !== "not_invited").map((r) => r.guest_id));

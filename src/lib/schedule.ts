@@ -25,15 +25,15 @@ export const SCHEDULE: ScheduleItem[] = [
     id: "ceremony",
     name: "Ceremony",
     date: WEDDING.date,
-    start: "13:30",
+    start: "13:00",
     endDate: WEDDING.date,
-    end: "14:00",
+    end: "13:30",
     venue: VENUE_FULL_NAME,
     note: "We\u2019re tying the knot!",
   },
-  { id: "photo-time", name: "Photo Time!", date: WEDDING.date, start: "14:00", endDate: WEDDING.date, end: "15:30", venue: VENUE_FULL_NAME },
-  { id: "wedding-reception", name: "Wedding Reception", date: WEDDING.date, start: "15:30", endDate: WEDDING.date, end: "19:30", venue: VENUE_FULL_NAME },
-  { id: "dance-the-night-away", name: "Dance the Night Away!", date: WEDDING.date, start: "19:30", endDate: "2027-03-16", end: "00:00", venue: VENUE_FULL_NAME },
+  { id: "photo-time", name: "Photo Time!", date: WEDDING.date, start: "13:30", endDate: WEDDING.date, end: "15:00", venue: VENUE_FULL_NAME },
+  { id: "wedding-reception", name: "Wedding Reception", date: WEDDING.date, start: "15:00", endDate: WEDDING.date, end: "19:00", venue: VENUE_FULL_NAME },
+  { id: "dance-the-night-away", name: "Dance the Night Away!", date: WEDDING.date, start: "19:00", endDate: "2027-03-16", end: "00:00", venue: VENUE_FULL_NAME },
 ];
 
 // Google Maps turn-by-turn directions to the venue.
