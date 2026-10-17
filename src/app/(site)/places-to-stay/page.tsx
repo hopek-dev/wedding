@@ -102,7 +102,7 @@ export default async function StayPage() {
               Tell us where you&rsquo;ll be staying
             </p>
             <p className="mt-3 text-[15px] leading-relaxed font-light text-muted-foreground">
-              There&rsquo;s a quick question on your RSVP, so we know who is nearby. Ratings were taken from the sites named and may have changed, so check before you book.
+              There&rsquo;s a quick question on your RSVP, so we know who is nearby. Ratings are from Google and may have changed, so check before you book.
             </p>
             <Link href="/rsvp" className={`${pill} mt-7`}>
               RSVP

@@ -120,7 +120,7 @@ export const STAY = {
 };
 
 // Places to stay, shown on the map and list. Coordinates are from each postcode.
-// Ratings are as seen when this was written (source named in each); check the live listing before relying on them.
+// Ratings are Google ratings as seen when this was written; check the live listing before relying on them.
 // "id" is what a guest's RSVP stores, so don't change an id once guests have replied.
 export interface StayPlace {
   id: string;
@@ -128,7 +128,7 @@ export interface StayPlace {
   kind: string;
   lat: number;
   lng: number;
-  miles: number | null; // by road/air from the venue, as listed by Tripadvisor; null for the venue itself
+  miles: number | null; // by road/air from the venue, null for the venue itself
   rating: number | null;
   ratingOutOf: number;
   ratingSource: string;
@@ -148,10 +148,10 @@ export const STAY_PLACES: StayPlace[] = [
     lat: VENUE.lat,
     lng: VENUE.lng,
     miles: null,
-    rating: 4,
+    rating: 4.6,
     ratingOutOf: 5,
-    ratingSource: "Tripadvisor",
-    reviews: 704,
+    ratingSource: "Google",
+    reviews: 969,
     blurb: "Rooms in the Georgian house and the courtyard, steps from the ceremony and the dance floor. Mention our wedding when you book.",
     url: process.env.NEXT_PUBLIC_ACCOMMODATION_URL?.trim() || "https://www.secure-hotel-booking.com/d-edge/Mulberry-House-Hotel-Conference-Centre/2MKA/en/DateSelection",
     bookLabel: "Book at the venue",
@@ -168,7 +168,7 @@ export const STAY_PLACES: StayPlace[] = [
     rating: 4.3,
     ratingOutOf: 5,
     ratingSource: "Google",
-    reviews: 1809,
+    reviews: 1815,
     blurb: "A four-star Victorian country house with a spa and gardens, if you want to make a weekend of it.",
     url: "https://www.booking.com/hotel/gb/downhallhotel.en-gb.html",
     bookLabel: "Book on Booking.com",
@@ -180,10 +180,10 @@ export const STAY_PLACES: StayPlace[] = [
     lat: 51.724902,
     lng: 0.127428,
     miles: 4.1,
-    rating: 4.1,
+    rating: 4.2,
     ratingOutOf: 5,
-    ratingSource: "Tripadvisor",
-    reviews: 60,
+    ratingSource: "Google",
+    reviews: 33,
     blurb: "A friendly, well-reviewed guest house with free parking and wifi.",
     url: "https://elmcroftepping.co.uk/",
     bookLabel: "Book direct",
@@ -195,10 +195,10 @@ export const STAY_PLACES: StayPlace[] = [
     lat: 51.767099,
     lng: 0.130731,
     miles: 6.7,
-    rating: 4.2,
+    rating: 4.4,
     ratingOutOf: 5,
-    ratingSource: "Tripadvisor",
-    reviews: 184,
+    ratingSource: "Google",
+    reviews: 349,
     blurb: "A dependable, good-value option with free wifi.",
     url: "https://www.premierinn.com/gb/en/hotels/england/essex/harlow/harlow-east-church-langley.html",
     bookLabel: "Book at Premier Inn",
@@ -210,10 +210,10 @@ export const STAY_PLACES: StayPlace[] = [
     lat: 51.694814,
     lng: 0.411707,
     miles: 6.7,
-    rating: 7.7,
-    ratingOutOf: 10,
-    ratingSource: "Booking.com",
-    reviews: 643,
+    rating: 4.3,
+    ratingOutOf: 5,
+    ratingSource: "Google",
+    reviews: 545,
     blurb: "A relaxed hotel on the Chelmsford side, with parking on site.",
     url: "https://www.booking.com/hotel/gb/best-western-ivy-hill.en-gb.html",
     bookLabel: "Book on Booking.com",
