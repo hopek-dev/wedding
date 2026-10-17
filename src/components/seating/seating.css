@@ -187,3 +187,28 @@ body.sp-dragging, body.sp-dragging * { cursor: grabbing !important; user-select:
 }
 .sp .tbar .name-field { display: flex; align-items: center; gap: 4px; flex: 1 1 90px; min-width: 0; color: var(--ink-soft); }
 .sp .tbar .name-field input { flex: 1; }
+
+/* How each guest has answered for the event: a mark on every pill and chip, a legend, and a list of those who declined. */
+.sp { --st-yes: #2f9e5f; --st-wait: #d99a1e; --st-no: #d24b4b; }
+.sp .stb { display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; border-radius: 9999px; font: 700 10px/1 system-ui, sans-serif; color: #fff; pointer-events: none; box-shadow: 0 0 0 1.5px var(--panel); }
+.sp .stb[data-st="confirmed"] { background: var(--st-yes); }
+.sp .stb[data-st="invited"] { background: var(--st-wait); }
+.sp .stb[data-st="declined"] { background: var(--st-no); }
+.sp .pill { position: relative; }
+.sp .pill .stb { position: absolute; top: -6px; right: -6px; }
+.sp .pill[data-st="invited"] { border-style: dashed; border-color: var(--st-wait); }
+.sp .pill[data-st="declined"] { opacity: 0.6; border-color: var(--st-no); }
+.sp .chip .stl { margin-left: auto; font-size: 11px; font-weight: 600; white-space: nowrap; padding: 1px 7px; border-radius: 9999px; background: var(--panel); }
+.sp .chip .stl[data-st="confirmed"] { color: var(--st-yes); }
+.sp .chip .stl[data-st="invited"] { color: var(--st-wait); }
+.sp .chip .stl[data-st="declined"] { color: var(--st-no); }
+.sp .chip .stb { margin-left: 4px; }
+.sp .rsvp-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; color: var(--ink-soft); }
+.sp .rsvp-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.sp .rsvp-legend b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.sp .rsvp-legend small { font-size: 12px; opacity: 0.85; }
+.sp .declined-list { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sp .declined-list h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--st-no); }
+.sp .declined-list h3 span { color: var(--ink-soft); font-weight: 500; }
+.sp .declined-list .dec { display: flex; align-items: center; gap: 8px; padding: 4px 8px; color: var(--ink-soft); }
+.sp .declined-list .dec .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--st-no) 60%, transparent); }

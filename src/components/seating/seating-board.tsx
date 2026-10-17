@@ -34,6 +34,23 @@ interface TableApi {
   remove: (id: string) => void;
 }
 
+// How a guest has answered for the event being planned: accepted, still pending, or declined. Guests who are
+// not invited to the event have no mark.
+const STATUS_MARK: Record<string, { symbol: string; label: string }> = {
+  confirmed: { symbol: "\u2713", label: "Accepted" },
+  invited: { symbol: "?", label: "Pending" },
+  declined: { symbol: "\u2715", label: "Declined" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const m = STATUS_MARK[status];
+  return m ? (
+    <span className="stb" data-st={status} aria-label={m.label}>
+      {m.symbol}
+    </span>
+  ) : null;
+}
+
 const hueStyle = (g: PlanGuest) =>
   g.hue === null ? undefined : ({ "--h": g.hue, "--s": "var(--pill-s)" } as CSSProperties);
 
@@ -42,22 +59,26 @@ function Pill({
   selected,
   query,
   where,
+  status,
 }: {
   g: PlanGuest;
   selected: boolean;
   query: string;
   where: string;
+  status: string;
 }) {
   const match = query ? (g.name.toLowerCase().includes(query) ? " hit" : " dim") : "";
   return (
     <div
       className={`pill${g.hue === null ? " neutral" : ""}${selected ? " sel-on" : ""}${match}`}
       data-g={g.id}
-      title={`${g.name} (${where})`}
+      title={`${g.name}${STATUS_MARK[status] ? `, ${STATUS_MARK[status].label.toLowerCase()}` : ""} (${where})`}
+      data-st={status}
       style={hueStyle(g)}
     >
       <b>{g.first}</b>
       <i>{g.last}</i>
+      <StatusBadge status={status} />
     </div>
   );
 }
@@ -125,6 +146,7 @@ function Table({
   api,
   avail,
   onlyOne,
+  statusOf,
 }: {
   table: PlanTable;
   guests: Map<string, PlanGuest>;
@@ -133,6 +155,7 @@ function Table({
   api: TableApi;
   avail: number;
   onlyOne: boolean;
+  statusOf: (guestId: string) => string;
 }) {
   const n = table.seats.length;
   const G = geom(n);
@@ -203,7 +226,7 @@ function Table({
                   style={{ left: x, top: y }}
                 >
                   {g ? (
-                    <Pill g={g} selected={selected === g.id} query={query} where={`${table.name}, seat ${s + 1}`} />
+                    <Pill g={g} selected={selected === g.id} query={query} where={`${table.name}, seat ${s + 1}`} status={statusOf(g.id)} />
                   ) : (
                     s + 1
                   )}
@@ -386,6 +409,16 @@ export function SeatingBoard({
     const s = statusOf(g.id);
     return seatedIds.has(g.id) || (s !== "declined" && (everyone || s === "invited" || s === "confirmed"));
   });
+  // How everyone has answered for this event (seated or not), for the counts and the "Declined" list.
+  const answered = { confirmed: 0, invited: 0, declined: 0 };
+  for (const g of guests) {
+    const st = statusOf(g.id);
+    if (st === "confirmed" || st === "invited" || st === "declined") answered[st]++;
+  }
+  const declinedUnseated = guests
+    .filter((g) => statusOf(g.id) === "declined" && !seatedIds.has(g.id))
+    .map((g) => planGuests.get(g.id)!)
+    .sort((a, b) => a.name.localeCompare(b.name));
   const q = query.trim().toLowerCase();
   const unseated = eligible
     .filter((g) => !seatedIds.has(g.id))
@@ -456,13 +489,13 @@ export function SeatingBoard({
   function listText() {
     const out: string[] = [];
     for (const t of plan) {
-      const names = t.seats.filter((x): x is string => x !== null).map(nameOf);
+      const names = t.seats.filter((x): x is string => x !== null).map((id) => `${nameOf(id)}${STATUS_MARK[statusOf(id)] ? ` [${STATUS_MARK[statusOf(id)].label.toLowerCase()}]` : ""}`);
       out.push(`${t.name} (${names.length}/${t.seats.length})`);
       names.forEach((n, i) => out.push(`  ${i + 1}. ${n}`));
       out.push("");
     }
     out.push(`Unseated (${unseated.length})`);
-    unseated.forEach((g) => out.push(`  - ${g.name}`));
+    unseated.forEach((g) => out.push(`  - ${g.name}${STATUS_MARK[statusOf(g.id)] ? ` [${STATUS_MARK[statusOf(g.id)].label.toLowerCase()}]` : ""}`));
     return out.join("\n");
   }
 
@@ -797,6 +830,19 @@ export function SeatingBoard({
           </span>
         </div>
 
+        <div className="rsvp-legend" aria-label="How guests have answered for this event">
+          <span data-st="confirmed">
+            <StatusBadge status="confirmed" /> <b>{answered.confirmed}</b> accepted
+          </span>
+          <span data-st="invited">
+            <StatusBadge status="invited" /> <b>{answered.invited}</b> pending
+          </span>
+          <span data-st="declined">
+            <StatusBadge status="declined" /> <b>{answered.declined}</b> declined
+          </span>
+          <small>The mark on each guest shows their answer for this event.</small>
+        </div>
+
         <div className={`selbar${selected !== null ? " on" : ""}`} aria-live="polite">
           {selectedGuest ? (
             <>
@@ -853,10 +899,27 @@ export function SeatingBoard({
                   >
                     <span className="grip" />
                     <span className="nm">{g.name}</span>
+                    <span className="stl" data-st={statusOf(g.id)}>
+                      {STATUS_MARK[statusOf(g.id)]?.label}
+                    </span>
+                    <StatusBadge status={statusOf(g.id)} />
                   </div>
                 ))
               )}
             </div>
+            {declinedUnseated.length > 0 && (
+              <div className="declined-list">
+                <h3>
+                  Declined <span>{declinedUnseated.length}</span>
+                </h3>
+                {declinedUnseated.map((g) => (
+                  <div key={g.id} className="dec">
+                    <span className="nm">{g.name}</span>
+                    <StatusBadge status="declined" />
+                  </div>
+                ))}
+              </div>
+            )}
           </aside>
 
           <main className="floor-wrap" ref={mainRef}>
@@ -874,6 +937,7 @@ export function SeatingBoard({
                   api={api}
                   avail={mainW}
                   onlyOne={false}
+                  statusOf={statusOf}
                 />
               ))}
           </main>
