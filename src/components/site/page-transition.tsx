@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { OpeningInvitation } from "@/components/site/opening-invitation";
 import { jumpToTop } from "@/components/site/smooth-scroll";
@@ -18,24 +18,27 @@ import { jumpToTop } from "@/components/site/smooth-scroll";
 // opened it before (no redirect trip).
 const MAX_WAIT_MS = 2500;
 
+// Kept outside the component on purpose. A guest's invitation lives in a different page frame from the rest of the
+// site, so moving between them replaces this whole component with a new one; the new page's "I have arrived" has to
+// reach the click handler that started the fade, or the fade waits out its time limit with the screen held still.
+const state = { leaving: false, arrived: null as (() => void) | null };
+
 type ViewTransitionDoc = Document & { startViewTransition?: (update: () => Promise<void> | void) => { finished: Promise<void>; ready?: Promise<void>; updateCallbackDone?: Promise<void> } };
 
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const leaving = useRef(false);
-  const arrived = useRef<(() => void) | null>(null);
   const [openingTo, setOpeningTo] = useState<string | null>(null);
   const opening = openingTo !== null && pathname !== openingTo;
 
   // the new page has arrived
   useEffect(() => {
-    const wasLeaving = leaving.current;
-    leaving.current = false;
-    if (!arrived.current && wasLeaving) jumpToTop(); // a page that arrived after the fade had already ended
-    if (arrived.current) {
-      const done = arrived.current;
-      arrived.current = null;
+    const wasLeaving = state.leaving;
+    state.leaving = false;
+    if (!state.arrived && wasLeaving) jumpToTop(); // a page that arrived after the fade had already ended
+    if (state.arrived) {
+      const done = state.arrived;
+      state.arrived = null;
       // The browser holds painting while the old page is kept for the fade, so don't wait for a frame here: the new
       // page is already in the document, and this releases it to be captured.
       window.setTimeout(done, 0);
@@ -69,7 +72,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
       setOpeningTo(toInvitation ? url.pathname : null);
 
       // the newest click wins: if another page is still on its way, go where the visitor has just asked to go
-      if (leaving.current) {
+      if (state.leaving) {
         e.preventDefault();
         e.stopPropagation();
         router.push(target);
@@ -88,13 +91,13 @@ export function PageTransition({ children }: { children: ReactNode }) {
 
       e.preventDefault();
       e.stopPropagation(); // we do the navigation ourselves
-      leaving.current = true;
+      state.leaving = true;
       let transition: ReturnType<NonNullable<ViewTransitionDoc["startViewTransition"]>>;
       try {
         transition = doc.startViewTransition(
           () =>
             new Promise<void>((resolve) => {
-              arrived.current = () => {
+              state.arrived = () => {
                 jumpToTop();
                 resolve();
               };
@@ -102,15 +105,15 @@ export function PageTransition({ children }: { children: ReactNode }) {
               // The browser gives up on a fade whose new page takes more than about 4 seconds. Let go well before
               // that: if the page still isn't here, the fade simply ends and the page appears when it is ready.
               window.setTimeout(() => {
-                if (arrived.current) {
-                  arrived.current = null;
+                if (state.arrived) {
+                  state.arrived = null;
                   resolve();
                 }
               }, MAX_WAIT_MS);
             })
         );
       } catch {
-        leaving.current = false;
+        state.leaving = false;
         router.push(target);
         return;
       }
@@ -121,7 +124,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
       transition.finished.catch(quiet).finally(() => {
         // if the page never arrived (a very slow load), allow the next click
         window.setTimeout(() => {
-          if (!arrived.current) leaving.current = false;
+          if (!state.arrived) state.leaving = false;
         }, 0);
       });
     };
