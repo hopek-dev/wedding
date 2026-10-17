@@ -30,5 +30,6 @@ export async function setRsvpDeadline(deadline: string | null): Promise<SaveDead
   if (error) return { ok: false, error: error.message };
   revalidatePath("/invitations");
   revalidatePath("/qa"); // the public Q & A quotes the deadline
+  revalidatePath("/rsvp"); // so does the RSVP page
   return { ok: true };
 }

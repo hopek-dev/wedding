@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { HeroPhoto } from "@/components/site/hero-photo";
 import { useEffect, useRef, useState } from "react";
 import { Pause } from "lucide-react";
 
@@ -23,6 +23,8 @@ const SPEED_PX_PER_SECOND = 54;
 export function HeroSlideshow({ slides }: { slides: Slide[] }) {
   const track = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
+  // the row only starts moving once its speed is known (see below); starting earlier, then changing the speed, made it jump
+  const [rolling, setRolling] = useState(false);
 
   useEffect(() => {
     const el = track.current;
@@ -32,6 +34,7 @@ export function HeroSlideshow({ slides }: { slides: Slide[] }) {
       el.style.setProperty("--loop", `${(oneList / SPEED_PX_PER_SECOND).toFixed(2)}s`);
     };
     apply();
+    setRolling(true);
     const ro = new ResizeObserver(apply);
     ro.observe(el);
     return () => ro.disconnect();
@@ -40,7 +43,8 @@ export function HeroSlideshow({ slides }: { slides: Slide[] }) {
   const row = (copy: number) =>
     slides.map((s, i) => (
       <div key={`${copy}-${s.src}`} className="hero-tile relative h-full shrink-0 overflow-hidden" aria-hidden={copy === 1}>
-        <Image
+        <HeroPhoto
+          zoom={false}
           src={s.src}
           alt={copy === 0 ? s.alt : ""}
           fill
@@ -68,7 +72,7 @@ export function HeroSlideshow({ slides }: { slides: Slide[] }) {
       className="hero-marquee relative cursor-pointer h-[100svh] min-h-[520px] w-full overflow-hidden bg-white portrait:h-[66svh] portrait:min-h-[440px]"
       aria-label="Photos of Vanessa and Hope. Click to pause or carry on."
     >
-      <div ref={track} className="hero-track flex h-full w-max gap-[3px]">
+      <div ref={track} className={`hero-track flex h-full w-max gap-[3px] ${rolling ? "is-rolling" : ""}`}>
         {row(0)}
         {row(1)}
       </div>

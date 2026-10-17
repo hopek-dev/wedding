@@ -27,6 +27,17 @@ export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? request.nextUrl.host;
   const kind = hostKind(host);
 
+  // The RSVP link on the website takes a guest whose browser has opened their invitation before straight back to it.
+  // It is done here so the RSVP page itself needs no cookie and can be served from the cache.
+  if (pathname === "/rsvp") {
+    const token = request.cookies.get("my-invite")?.value;
+    if (token && /^[a-f0-9]{8,64}$/i.test(token)) {
+      const back = request.nextUrl.clone();
+      back.pathname = `/rsvp/${token}`;
+      return NextResponse.redirect(back);
+    }
+  }
+
   // ---- the main wedding website ----
   if (kind === "public") {
     if (host.toLowerCase().split(":")[0] === APEX_HOST && APEX_HOST !== PUBLIC_HOST) return toHost(request, PUBLIC_HOST, 308);

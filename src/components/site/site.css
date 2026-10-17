@@ -19,11 +19,12 @@
    (one list), so the loop has no seam. --loop is set from the strip's width (hero-slideshow.tsx)
    so the speed is the same on every screen. */
 .hero-tile { aspect-ratio: 3 / 2; } /* landscape */
-.hero-track { animation: hero-roll var(--loop, 50s) linear infinite; will-change: transform; }
+.hero-track { will-change: transform; }
+.hero-track.is-rolling { animation: hero-roll var(--loop) linear infinite; }
 /* Paused only when the visitor clicks or taps the photos (hero-slideshow.tsx), not by hovering. */
 .hero-marquee[data-paused] .hero-track { animation-play-state: paused; }
 @keyframes hero-roll { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 1.5px)); } }
-@media (prefers-reduced-motion: reduce) { .hero-track { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .hero-track, .hero-track.is-rolling { animation: none; } }
 
 /* Drop cap for the first paragraph of the story (tablet and up; on a phone it throws the first lines off). */
 @media (min-width: 640px) {
@@ -48,6 +49,11 @@ details.faq[open] .faq-chevron { transform: rotate(180deg); }
   .hero-photo.is-loaded { opacity: 1; animation: hero-settle 1.6s cubic-bezier(0.16, 0.6, 0.2, 1) both, hero-fade 0.7s ease both; }
 }
 @keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
+/* the same, without the zoom: the rolling photos on the welcome page */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .hero-photo-fade { opacity: 0; }
+  .hero-photo-fade.is-loaded { opacity: 1; animation: hero-fade 0.7s ease both; }
+}
 
 /* The thin line at the bottom of each hero: it draws down, then wipes away, and repeats. */
 @keyframes scroll-cue { 0% { transform: translateX(-50%) scaleY(0); transform-origin: top; } 45% { transform: translateX(-50%) scaleY(1); transform-origin: top; } 55% { transform: translateX(-50%) scaleY(1); transform-origin: bottom; } 100% { transform: translateX(-50%) scaleY(0); transform-origin: bottom; } }
