@@ -1,25 +1,47 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { OpeningInvitation } from "@/components/site/opening-invitation";
 import { jumpToTop } from "@/components/site/smooth-scroll";
 
-// Moving between pages is instant: no fade, dissolve or cover. Next.js swaps the page the moment it is ready (the
-// pages are fetched ahead of the click), and this only makes sure the new page starts at the top.
+// A quick crossfade between pages, with no cover and never an empty screen.
 //
-// Two small extras for a guest's own invitation, which is built just for them and so is slower to arrive:
-//  - the RSVP link goes straight to their page when this browser has opened it before (no redirect trip);
-//  - a small notice at the top says it is on its way, while the page stays as it is.
+// In a browser that supports the View Transitions API (Chrome, Edge, Safari 18+, recent Firefox) clicking an
+// internal link takes a picture of the current page, loads the next one underneath, and fades from the old picture
+// to the new page. The two overlap the whole time. The header sits in its own layer and stays put (site.css).
+// Browsers without it simply switch pages at once. Stands aside for modified clicks, downloads, links that open
+// elsewhere, and "reduced motion".
+//
+// A guest's own invitation is built just for them and so is slower to arrive; there the page stays as it is, with a
+// small notice at the top saying it is on its way, and the RSVP link goes straight to it when this browser has
+// opened it before (no redirect trip).
+const MAX_WAIT_MS = 2500;
+
+type ViewTransitionDoc = Document & { startViewTransition?: (update: () => Promise<void> | void) => { finished: Promise<void>; ready?: Promise<void>; updateCallbackDone?: Promise<void> } };
+
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const leaving = useRef(false);
+  const arrived = useRef<(() => void) | null>(null);
   const [openingTo, setOpeningTo] = useState<string | null>(null);
   const opening = openingTo !== null && pathname !== openingTo;
 
-  // every new page starts at the top
+  // the new page has arrived
   useEffect(() => {
-    jumpToTop();
+    const wasLeaving = leaving.current;
+    leaving.current = false;
+    if (!arrived.current && wasLeaving) jumpToTop(); // a page that arrived after the fade had already ended
+    if (arrived.current) {
+      const done = arrived.current;
+      arrived.current = null;
+      // The browser holds painting while the old page is kept for the fade, so don't wait for a frame here: the new
+      // page is already in the document, and this releases it to be captured.
+      window.setTimeout(done, 0);
+    } else {
+      jumpToTop();
+    }
   }, [pathname]);
 
   useEffect(() => {
@@ -29,6 +51,8 @@ export function PageTransition({ children }: { children: ReactNode }) {
   }, [openingTo]);
 
   useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const doc = document as ViewTransitionDoc;
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a");
@@ -40,13 +64,66 @@ export function PageTransition({ children }: { children: ReactNode }) {
         if (mine) url.pathname = `/rsvp/${mine}`;
       }
       if (url.pathname === location.pathname) return;
+      const target = url.pathname + url.search + url.hash;
       const toInvitation = url.pathname.startsWith("/rsvp/");
       setOpeningTo(toInvitation ? url.pathname : null);
-      if (toInvitation && a.getAttribute("href") === "/rsvp") {
+
+      // the newest click wins: if another page is still on its way, go where the visitor has just asked to go
+      if (leaving.current) {
         e.preventDefault();
         e.stopPropagation();
-        router.push(url.pathname + url.search + url.hash);
+        router.push(target);
+        return;
       }
+      // the guest's invitation: no fade (it can't show anything while it waits), just the notice
+      if (toInvitation) {
+        if (a.getAttribute("href") === "/rsvp") {
+          e.preventDefault();
+          e.stopPropagation();
+          router.push(target);
+        }
+        return;
+      }
+      if (reduced || !doc.startViewTransition) return; // Next.js navigates on its own, at once
+
+      e.preventDefault();
+      e.stopPropagation(); // we do the navigation ourselves
+      leaving.current = true;
+      let transition: ReturnType<NonNullable<ViewTransitionDoc["startViewTransition"]>>;
+      try {
+        transition = doc.startViewTransition(
+          () =>
+            new Promise<void>((resolve) => {
+              arrived.current = () => {
+                jumpToTop();
+                resolve();
+              };
+              router.push(target);
+              // The browser gives up on a fade whose new page takes more than about 4 seconds. Let go well before
+              // that: if the page still isn't here, the fade simply ends and the page appears when it is ready.
+              window.setTimeout(() => {
+                if (arrived.current) {
+                  arrived.current = null;
+                  resolve();
+                }
+              }, MAX_WAIT_MS);
+            })
+        );
+      } catch {
+        leaving.current = false;
+        router.push(target);
+        return;
+      }
+      // A fade that is skipped or cut short is normal (a fast second click, a slow page), not an error.
+      const quiet = () => undefined;
+      transition.ready?.catch(quiet);
+      transition.updateCallbackDone?.catch(quiet);
+      transition.finished.catch(quiet).finally(() => {
+        // if the page never arrived (a very slow load), allow the next click
+        window.setTimeout(() => {
+          if (!arrived.current) leaving.current = false;
+        }, 0);
+      });
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);

@@ -52,6 +52,13 @@ details.faq[open] .faq-chevron { transform: rotate(180deg); }
   .hero-photo-fade.is-loaded { animation: hero-fade 0.7s ease both; }
 }
 
+/* Moving between pages (page-transition.tsx): the old page fades into the new one, quickly and with no gap. The header
+   is its own layer, so it stays put. */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.3s; animation-timing-function: ease-out; }
+::view-transition-group(site-header) { animation-duration: 0s; }
+::view-transition-old(site-header), ::view-transition-new(site-header) { animation-duration: 0.3s; }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
+
 /* The thin line at the bottom of each hero: it draws down, then wipes away, and repeats. */
 @keyframes scroll-cue { 0% { transform: translateX(-50%) scaleY(0); transform-origin: top; } 45% { transform: translateX(-50%) scaleY(1); transform-origin: top; } 55% { transform: translateX(-50%) scaleY(1); transform-origin: bottom; } 100% { transform: translateX(-50%) scaleY(0); transform-origin: bottom; } }
 .scroll-cue { animation: scroll-cue 2.6s cubic-bezier(0.6, 0, 0.3, 1) infinite; background: rgba(255,255,255,0.8) !important; }
