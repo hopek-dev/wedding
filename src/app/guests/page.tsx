@@ -25,7 +25,8 @@ import { guestFullName, type RsvpStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function GuestsPage() {
+export default async function GuestsPage({ searchParams }: { searchParams: Promise<{ tag?: string }> }) {
+  const { tag: tagParam } = await searchParams;
   const [events, { guests, rsvps }] = await Promise.all([
     listEvents(),
     listGuestsWithRsvps(),
@@ -36,6 +37,13 @@ export default async function GuestsPage() {
     rsvpByGuestAndEvent.set(`${rsvp.guest_id}:${rsvp.event_id}`, rsvp.status);
   }
   const guestById = new Map(guests.map((g) => [g.id, g]));
+  // Filter by tag (?tag=Hope). A plus-one is shown with their host, so they follow the host's tag.
+  const tagOf = (g: (typeof guests)[number]) => (g.plus_one_of ? guestById.get(g.plus_one_of)?.tag : g.tag)?.trim() || "";
+  const tagCounts = new Map<string, number>();
+  for (const g of guests) if (!g.plus_one_of && g.tag?.trim()) tagCounts.set(g.tag.trim(), (tagCounts.get(g.tag.trim()) ?? 0) + 1);
+  const tags = [...tagCounts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const activeTag = tagParam && tagCounts.has(tagParam) ? tagParam : "";
+  const shownGuests = activeTag ? guests.filter((g) => tagOf(g) === activeTag) : guests;
   const plusOnesByHost = new Map<string, typeof guests>();
   for (const g of guests) {
     if (g.plus_one_of) plusOnesByHost.set(g.plus_one_of, [...(plusOnesByHost.get(g.plus_one_of) ?? []), g]);
@@ -66,6 +74,21 @@ export default async function GuestsPage() {
         </div>
       </div>
 
+      {tags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Guest list:</span>
+          {[{ key: "", label: "Everyone", n: guests.filter((g) => !g.plus_one_of).length }, ...tags.map(([t, n]) => ({ key: t, label: t, n }))].map(({ key, label, n }) => (
+            <Link
+              key={key || "all"}
+              href={key ? `/guests?tag=${encodeURIComponent(key)}` : "/guests"}
+              className={`rounded-full border px-3 py-1 text-sm transition-colors ${activeTag === key ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
+            >
+              {label} <span className="tabular-nums opacity-70">{n}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-lg border bg-card">
         <Table className="stack-table">
           <TableHeader>
@@ -82,7 +105,7 @@ export default async function GuestsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {guests.map((guest) => {
+            {shownGuests.map((guest) => {
               const inviter = guest.plus_one_of ? guestById.get(guest.plus_one_of) : undefined;
               const plusOnes = plusOnesByHost.get(guest.id) ?? [];
               // An import note like "Plus one of Franco" that never got linked
