@@ -58,23 +58,6 @@ details.faq[open] .faq-chevron { transform: rotate(180deg); }
 @keyframes scroll-cue { 0% { transform: translateX(-50%) scaleY(0); transform-origin: top; } 45% { transform: translateX(-50%) scaleY(1); transform-origin: top; } 55% { transform: translateX(-50%) scaleY(1); transform-origin: bottom; } 100% { transform: translateX(-50%) scaleY(0); transform-origin: bottom; } }
 .scroll-cue { animation: scroll-cue 2.6s cubic-bezier(0.6, 0, 0.3, 1) infinite; background: rgba(255,255,255,0.8) !important; }
 
-/* Moving between pages: the old page fades out as you click and the next one fades in (page-transition.tsx).
-   The header sits outside the fading part, so it stays put. */
-@keyframes page-arrive { from { opacity: 0; } to { opacity: 1; } }
-/* fill-mode backwards (not both): once it has played, nothing is held, so .page-leaving can fade it out */
-.page-arrive { animation: page-arrive 0.55s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
-.page-leaving { opacity: 0; transition: opacity 0.26s cubic-bezier(0.4, 0, 0.6, 1); }
-
-/* Browsers that support View Transitions dissolve from the old page to the new one themselves (page-transition.tsx), so
-   the page's own fade-in is off there. (Switching it back on when the dissolve ended restarted it from invisible:
-   a second, sharp fade straight after the smooth one.) Browsers without them keep the fade-in above as a fallback.
-   The dissolve is slow and eased; the header is its own layer and stays put. */
-@supports (view-transition-name: none) { .page-arrive { animation: none; } }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.7s; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
-::view-transition-group(site-header) { animation-duration: 0s; }
-::view-transition-old(site-header), ::view-transition-new(site-header) { animation-duration: 0.7s; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
-@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
-
 /* Hero photographs ease in from a slight zoom when a page opens. */
 @keyframes hero-settle { from { transform: scale(1.13); } to { transform: scale(1); } }
 .hero-settle { animation: hero-settle 1.6s cubic-bezier(0.16, 0.6, 0.2, 1) both; }
@@ -86,8 +69,6 @@ details.faq[open] .faq-chevron { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) {
   .hero-settle, .hero-photo, .scroll-cue { animation: none; }
   .scroll-cue { transform: translateX(-50%); }
-  .page-arrive { animation: none; }
-  .page-leaving { transition: none; }
 }
 
 /* The schedule timeline: each line draws itself down from its event to the next as the event scrolls into view,

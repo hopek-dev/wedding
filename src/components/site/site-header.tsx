@@ -59,7 +59,7 @@ export function SiteHeader() {
           "fixed inset-x-0 top-0 z-40 transition-[background-color,box-shadow,backdrop-filter] duration-500",
           light ? "bg-transparent" : "bg-background/95 shadow-[0_1px_0_0_rgba(70,62,30,0.12)] backdrop-blur-md"
         )}
-        style={{ paddingTop: "env(safe-area-inset-top)", viewTransitionName: "site-header" }}
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* a soft shade behind the white lettering, gone once the bar is solid */}
         <div aria-hidden className={cn("pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-black/55 to-transparent transition-opacity duration-500", light ? "opacity-100" : "opacity-0")} />
