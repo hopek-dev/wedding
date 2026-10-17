@@ -44,15 +44,14 @@ details.faq[open] .faq-chevron { transform: rotate(180deg); }
 
 /* Hero photographs ease in from a slight zoom when a page opens. */
 @keyframes hero-settle { from { transform: scale(1.13); } to { transform: scale(1); } }
-@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
-  .hero-photo { opacity: 0; }
-  .hero-photo.is-loaded { opacity: 1; animation: hero-settle 1.6s cubic-bezier(0.16, 0.6, 0.2, 1) both, hero-fade 0.7s ease both; }
-}
 @keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
-/* the same, without the zoom: the rolling photos on the welcome page */
+/* A photo already in the browser shows straight away. One still downloading is hidden (.is-pending) until it arrives
+   (.is-loaded), then fades in. The rolling photos on the welcome page (.hero-photo-fade) fade without the zoom. */
 @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
-  .hero-photo-fade { opacity: 0; }
-  .hero-photo-fade.is-loaded { opacity: 1; animation: hero-fade 0.7s ease both; }
+  .hero-photo { animation: hero-settle 1.6s cubic-bezier(0.16, 0.6, 0.2, 1) both; }
+  .hero-photo.is-pending, .hero-photo-fade.is-pending { opacity: 0; animation: none; }
+  .hero-photo.is-loaded { animation: hero-settle 1.6s cubic-bezier(0.16, 0.6, 0.2, 1) both, hero-fade 0.7s ease both; }
+  .hero-photo-fade.is-loaded { animation: hero-fade 0.7s ease both; }
 }
 
 /* The thin line at the bottom of each hero: it draws down, then wipes away, and repeats. */

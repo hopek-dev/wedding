@@ -3,14 +3,16 @@
 import Image, { type ImageProps } from "next/image";
 import { useCallback, useState } from "react";
 
-// A hero photograph that stays hidden until it has actually loaded, then fades in while easing out of a slight
-// zoom (styles: site.css; with zoom={false} it only fades). Without this, the zoom ran while the picture was still downloading, so the photo
-// popped in sharp and already settled, a moment after the page had appeared.
+// A hero photograph. One that is already in the browser (cached, or preloaded) simply shows, so moving between
+// pages never puts a pale cover over the hero. One that is still downloading when the page appears is hidden
+// until it arrives, then fades in (styles: site.css; with zoom={false} it only fades, otherwise it also eases out
+// of a slight zoom).
 export function HeroPhoto({ className = "", zoom = true, ...props }: ImageProps & { zoom?: boolean }) {
-  const [loaded, setLoaded] = useState(false);
-  // a photo that was already in the browser's cache can be finished before this component starts listening
+  const [state, setState] = useState<"ready" | "pending" | "loaded">("ready");
+  // runs as the photo is attached to the page, before it is painted
   const ref = useCallback((img: HTMLImageElement | null) => {
-    if (img?.complete && img.naturalWidth > 0) setLoaded(true);
+    if (img && !(img.complete && img.naturalWidth > 0)) setState((s) => (s === "ready" ? "pending" : s));
   }, []);
-  return <Image {...props} ref={ref} onLoad={() => setLoaded(true)} className={`${zoom ? "hero-photo" : "hero-photo-fade"} ${loaded ? "is-loaded" : ""} ${className}`} />;
+  const base = zoom ? "hero-photo" : "hero-photo-fade";
+  return <Image {...props} ref={ref} onLoad={() => setState((s) => (s === "pending" ? "loaded" : s))} className={`${base} ${state === "pending" ? "is-pending" : state === "loaded" ? "is-loaded" : ""} ${className}`} />;
 }
