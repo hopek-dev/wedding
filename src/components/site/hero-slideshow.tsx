@@ -44,7 +44,7 @@ export function HeroSlideshow({ slides }: { slides: Slide[] }) {
     slides.map((s, i) => (
       <div key={`${copy}-${s.src}`} className="hero-tile relative h-full shrink-0 overflow-hidden" aria-hidden={copy === 1}>
         <HeroPhoto
-          zoom={false}
+          fadeOnly
           src={s.src}
           alt={copy === 0 ? s.alt : ""}
           fill

@@ -6,7 +6,8 @@ import { useEffect, useRef } from "react";
 
 // A photograph that fills its box edge to edge and drifts a little slower than the page as you scroll,
 // which gives the pictures depth. The picture is drawn slightly taller than its box so it has room to move.
-// With `settle` it also eases in from a slight zoom when the page opens. Both stand still for "reduced motion".
+// With `settle` (a hero at the very top of the page) the picture starts exactly in place and only moves as you scroll,
+// so nothing shifts when the page loads. Both stand still for "reduced motion".
 export function ParallaxImage({
   src,
   alt,
@@ -38,8 +39,9 @@ export function ParallaxImage({
     const update = () => {
       raf = 0;
       const r = el.getBoundingClientRect();
-      const offset = r.top + r.height / 2 - window.innerHeight / 2;
-      pic.style.transform = `translate3d(0, ${Math.round(-offset * strength)}px, 0)`; // whole pixels: a fractional shift softens the picture
+      // a hero is measured from the top of the page, so it is at rest (0) until you scroll
+      const shift = settle ? window.scrollY * strength : -(r.top + r.height / 2 - window.innerHeight / 2) * strength;
+      pic.style.transform = `translate3d(0, ${Math.round(shift)}px, 0)`; // whole pixels: a fractional shift softens the picture
     };
     const queue = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -62,7 +64,7 @@ export function ParallaxImage({
       window.removeEventListener("resize", queue);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [strength]);
+  }, [strength, settle]);
 
   return (
     <div ref={box} className="absolute inset-0 overflow-hidden">
