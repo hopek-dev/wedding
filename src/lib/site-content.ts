@@ -247,7 +247,7 @@ export const QA_INTRO = "If you\u2019ve got any questions, have a look at our Q 
 export const FALLBACK_DEADLINE_TEXT = "30th November";
 
 // Who guests should contact with questions. Add the phone number here when you have it.
-export const QA_CONTACT = { name: "Nia Holland", phone: "" };
+export const QA_CONTACT = { name: "Joy Senyo", phone: "+44 7517 387974" };
 
 // "deadline" and "contact" mark answers that are filled in by the page. Everything else is as written.
 export const QA: Array<{ q: string; a?: string; kind?: "deadline" | "contact" }> = [
