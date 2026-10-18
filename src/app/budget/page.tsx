@@ -15,7 +15,7 @@ import { AlertTriangle } from "lucide-react";
 import { BudgetFormDialog } from "@/components/budget/budget-form-dialog";
 import { DeleteBudgetButton } from "@/components/budget/delete-budget-button";
 import { formatGBP, formatDate } from "@/lib/format";
-import { budgetCategoryOptions, guestCountsByEvent, guestListCount, perGuestBreakdown, resolvedEstimatedCost } from "@/lib/budget";
+import { ALL_GUESTS, NO_EVENT_GUESTS, budgetCategoryOptions, costSplit, describeGuests, guestCountsByEvent, perGuestBreakdown, resolvedActualCost, resolvedEstimatedCost } from "@/lib/budget";
 import type { BudgetItem } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -36,22 +36,25 @@ export default async function BudgetPage() {
   const guestCounts = guestCountsByEvent(events.map((e) => e.id), rsvps, guests);
   const categories = budgetCategoryOptions(items);
 
+  // Estimated is priced for everyone invited; actual for the guests who have accepted (see src/lib/budget.ts).
   const totalEstimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
-  const totalActual = items.reduce(
-    (sum, i) => sum + Number(i.actual_cost ?? resolvedEstimatedCost(i, guestCounts)),
-    0
-  );
+  const totalActual = items.reduce((sum, i) => sum + resolvedActualCost(i, guestCounts), 0);
   const totalPaid = items.reduce((sum, i) => sum + Number(i.amount_paid), 0);
 
-  // The budget in terms of guests: who it is for, what part depends on the number of guests, and where a supplier's
-  // minimum means paying for guests who aren't there.
-  const everyone = guestListCount(guests);
-  const isPerGuestItem = (i: BudgetItem) => i.cost_type === "per_guest" && !!i.event_id && i.per_guest_cost != null;
-  const perGuestTotal = items.filter(isPerGuestItem).reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
-  const fixedTotal = totalEstimated - perGuestTotal;
+  // The budget in terms of guests: who it is for, what part is fixed (flat costs, and the value of any minimum number of
+  // guests) and what depends on the number of guests, and where a supplier's minimum means paying for empty places.
+  const everyone = guestCounts[ALL_GUESTS] ?? NO_EVENT_GUESTS;
+  const isPerGuestItem = (i: BudgetItem) => i.cost_type === "per_guest" && i.per_guest_cost != null;
+  const split = items.reduce(
+    (t, i) => {
+      const c = costSplit(i, guestCounts);
+      return { fixed: t.fixed + c.fixed, variable: t.variable + c.variable };
+    },
+    { fixed: 0, variable: 0 }
+  );
   const minimums = items
     .filter(isPerGuestItem)
-    .map((item) => ({ item, b: perGuestBreakdown(item, guestCounts[item.event_id!] ?? { adults: 0, children: 0 }) }))
+    .map((item) => ({ item, b: perGuestBreakdown(item, (guestCounts[item.event_id ?? ALL_GUESTS] ?? NO_EVENT_GUESTS).invited) }))
     .filter(({ b }) => b.shortfall > 0);
 
   return (
@@ -71,13 +74,19 @@ export default async function BudgetPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Estimated total</CardTitle>
           </CardHeader>
-          <CardContent className="text-lg font-semibold sm:text-2xl">{formatGBP(totalEstimated)}</CardContent>
+          <CardContent>
+            <div className="text-lg font-semibold sm:text-2xl">{formatGBP(totalEstimated)}</div>
+            <div className="text-xs text-muted-foreground">all {everyone.invited.total} invited</div>
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Actual / expected</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Actual so far</CardTitle>
           </CardHeader>
-          <CardContent className="text-lg font-semibold sm:text-2xl">{formatGBP(totalActual)}</CardContent>
+          <CardContent>
+            <div className="text-lg font-semibold sm:text-2xl">{formatGBP(totalActual)}</div>
+            <div className="text-xs text-muted-foreground">{everyone.accepted.total} accepted so far</div>
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
@@ -90,12 +99,8 @@ export default async function BudgetPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Budget for {everyone.total} guest{everyone.total === 1 ? "" : "s"}
-            <span className="font-normal text-muted-foreground">
-              {" "}
-              ({everyone.adults} adult{everyone.adults === 1 ? "" : "s"}
-              {everyone.children > 0 ? `, ${everyone.children} child${everyone.children === 1 ? "" : "ren"}` : ""})
-            </span>
+            Budget for {everyone.invited.total} invited guest{everyone.invited.total === 1 ? "" : "s"}
+            <span className="font-normal text-muted-foreground"> ({describeGuests(everyone.invited)})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm">
@@ -105,37 +110,47 @@ export default async function BudgetPage() {
               <div className="text-lg font-semibold">{formatGBP(totalEstimated)}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Per guest</div>
-              <div className="text-lg font-semibold">{formatGBP(everyone.total > 0 ? totalEstimated / everyone.total : 0)}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Depends on guest numbers</div>
-              <div className="text-lg font-semibold">{formatGBP(perGuestTotal)}</div>
+              <div className="text-xs text-muted-foreground">Per invited guest</div>
+              <div className="text-lg font-semibold">{formatGBP(everyone.invited.total > 0 ? totalEstimated / everyone.invited.total : 0)}</div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Fixed costs</div>
-              <div className="text-lg font-semibold">{formatGBP(fixedTotal)}</div>
+              <div className="text-lg font-semibold">{formatGBP(split.fixed)}</div>
+              <div className="text-xs text-muted-foreground">includes any minimum number of guests</div>
             </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Depends on guest numbers</div>
+              <div className="text-lg font-semibold">{formatGBP(split.variable)}</div>
+            </div>
+          </div>
+          <div className="rounded-md bg-muted/40 px-3 py-2">
+            <span className="text-xs text-muted-foreground">Accepted so far</span>{" "}
+            <strong className="font-medium">
+              {everyone.accepted.total} guest{everyone.accepted.total === 1 ? "" : "s"}
+            </strong>{" "}
+            <span className="text-muted-foreground">({describeGuests(everyone.accepted)})</span>
+            <span className="text-muted-foreground"> · actual so far </span>
+            <strong className="font-medium">{formatGBP(totalActual)}</strong>
           </div>
           {events.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {events.map((e) => {
-                const c = guestCounts[e.id];
+                const c = guestCounts[e.id] ?? NO_EVENT_GUESTS;
                 return (
                   <Badge key={e.id} variant="outline" className="h-auto px-2.5 py-1 font-normal whitespace-normal">
-                    {e.name}: <strong className="ml-1 font-medium">{c?.total ?? 0}</strong>
-                    <span className="ml-1 text-muted-foreground">
-                      ({c?.adults ?? 0} adult{c?.adults === 1 ? "" : "s"}
-                      {c?.children ? `, ${c.children} child${c.children === 1 ? "" : "ren"}` : ""})
-                    </span>
+                    {e.name}: <strong className="ml-1 font-medium">{c.invited.total}</strong>
+                    <span className="ml-1 text-muted-foreground">invited ·</span>
+                    <strong className="ml-1 font-medium">{c.accepted.total}</strong>
+                    <span className="ml-1 text-muted-foreground">accepted</span>
                   </Badge>
                 );
               })}
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Guests are counted unless they have declined that event. Mark a guest as an adult or a child on the Guests page; per-guest costs
-            use the adult or child rate, and any minimum number of guests, set on each expense.
+            The estimate is priced for every guest invited (including those who haven&apos;t replied or have declined); the actual is priced for the
+            guests who have accepted. Mark a guest as an adult, teen or child on the Guests page; per-guest costs use the adult, teen or child rate set on
+            each expense. If a supplier has a minimum number of guests, its value counts as a fixed cost.
           </p>
         </CardContent>
       </Card>
@@ -145,12 +160,13 @@ export default async function BudgetPage() {
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <div className="grid gap-1">
             <strong>
-              {minimums.length} expense{minimums.length === 1 ? " is" : "s are"} charging for a minimum number of guests ({formatGBP(minimums.reduce((a, m) => a + m.b.shortfallCost, 0))} for places that aren&apos;t filled).
+              You have invited fewer guests than {minimums.length === 1 ? "a supplier&apos;s" : "some suppliers&apos;"} minimum, so even if everyone comes you pay for empty places (
+              {formatGBP(minimums.reduce((a, m) => a + m.b.shortfallCost, 0))}).
             </strong>
             {minimums.map(({ item, b }) => (
               <span key={item.id}>
                 {item.category}
-                {item.vendor_name ? ` (${item.vendor_name})` : ""}: minimum {b.minimum}, you have {b.adults + b.children}. {b.shortfall} empty place{b.shortfall === 1 ? "" : "s"} × {formatGBP(b.adultRate)} = {formatGBP(b.shortfallCost)}.
+                {item.vendor_name ? ` (${item.vendor_name})` : ""}: minimum {b.minimum}, {b.adults + b.teens + b.children} invited. {b.shortfall} empty place{b.shortfall === 1 ? "" : "s"} × {formatGBP(b.adultRate)} = {formatGBP(b.shortfallCost)}.
               </span>
             ))}
           </div>
@@ -174,9 +190,32 @@ export default async function BudgetPage() {
           </TableHeader>
           <TableBody>
             {items.map((item) => {
-              const estimated = resolvedEstimatedCost(item, guestCounts);
-              const isPerGuest = item.cost_type === "per_guest" && item.event_id;
-              const split = isPerGuest ? perGuestBreakdown(item, guestCounts[item.event_id!] ?? { adults: 0, children: 0 }) : null;
+              const counts = guestCounts[item.event_id ?? ALL_GUESTS] ?? NO_EVENT_GUESTS;
+              const estimate = isPerGuestItem(item) ? perGuestBreakdown(item, counts.invited) : null;
+              const actualSplit = isPerGuestItem(item) ? perGuestBreakdown(item, counts.accepted) : null;
+              const actual = resolvedActualCost(item, guestCounts);
+              const lines = (b: ReturnType<typeof perGuestBreakdown>) => (
+                <div className="text-xs text-muted-foreground">
+                  <div>
+                    {b.adults} adult{b.adults === 1 ? "" : "s"} × {formatGBP(b.adultRate)}
+                  </div>
+                  {b.teens > 0 && (
+                    <div>
+                      {b.teens} teen{b.teens === 1 ? "" : "s"} × {formatGBP(b.teenRate)}
+                    </div>
+                  )}
+                  {b.children > 0 && (
+                    <div>
+                      {b.children} child{b.children === 1 ? "" : "ren"} × {formatGBP(b.childRate)}
+                    </div>
+                  )}
+                  {b.shortfall > 0 && (
+                    <div className="text-amber-400">
+                      + {b.shortfall} to reach the minimum of {b.minimum}
+                    </div>
+                  )}
+                </div>
+              );
               return (
                 <TableRow key={item.id}>
                   <TableCell data-span="full" className="font-medium">{item.category}</TableCell>
@@ -185,26 +224,27 @@ export default async function BudgetPage() {
                     {item.event_id ? eventNameById.get(item.event_id) : "General"}
                   </TableCell>
                   <TableCell data-label="Estimated">
-                    <div>{formatGBP(estimated)}</div>
-                    {split && (
-                      <div className="text-xs text-muted-foreground">
-                        <div>
-                          {split.adults} adult{split.adults === 1 ? "" : "s"} × {formatGBP(split.adultRate)}
-                        </div>
-                        {split.children > 0 && (
-                          <div>
-                            {split.children} child{split.children === 1 ? "" : "ren"} × {formatGBP(split.childRate)}
-                          </div>
-                        )}
-                        {split.shortfall > 0 && (
-                          <div className="text-amber-400">
-                            + {split.shortfall} to reach the minimum of {split.minimum}
-                          </div>
-                        )}
-                      </div>
+                    <div>{formatGBP(resolvedEstimatedCost(item, guestCounts))}</div>
+                    {estimate && (
+                      <>
+                        <div className="text-xs text-muted-foreground">invited guests</div>
+                        {lines(estimate)}
+                      </>
                     )}
                   </TableCell>
-                  <TableCell data-label="Actual">{item.actual_cost != null ? formatGBP(item.actual_cost) : "—"}</TableCell>
+                  <TableCell data-label="Actual">
+                    {estimate && actualSplit ? (
+                      <>
+                        <div>{formatGBP(actual)}</div>
+                        <div className="text-xs text-muted-foreground">accepted guests</div>
+                        {lines(actualSplit)}
+                      </>
+                    ) : item.actual_cost != null ? (
+                      formatGBP(item.actual_cost)
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
                   <TableCell data-label="Paid">{formatGBP(item.amount_paid)}</TableCell>
                   <TableCell data-label="Due" className="text-muted-foreground">{formatDate(item.due_date)}</TableCell>
                   <TableCell data-label="Status">

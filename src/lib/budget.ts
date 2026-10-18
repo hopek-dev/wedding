@@ -1,4 +1,4 @@
-import type { BudgetItem, Guest, GuestRsvp } from "@/lib/supabase/types";
+import type { AgeGroup, BudgetItem, Guest, GuestRsvp, RsvpStatus } from "@/lib/supabase/types";
 import { unnamedPlusOnes } from "@/lib/party";
 
 export const DEFAULT_BUDGET_CATEGORIES = [
@@ -25,63 +25,104 @@ export function budgetCategoryOptions(items: BudgetItem[]) {
   );
 }
 
-// How many people an event is for, split into adults and children (children are priced differently, see below).
+// How many people an event is for, split by age group (teens and children are priced differently, see below).
 export interface GuestCount {
   adults: number;
+  teens: number;
   children: number;
   total: number;
 }
 
-export const isChild = (g: Pick<Guest, "age_group">) => g.age_group === "child";
+export const ageGroupOf = (g: Pick<Guest, "age_group">): AgeGroup => (g.age_group === "child" || g.age_group === "teen" ? g.age_group : "adult");
 
-// A guest counts toward an event's headcount unless they've been explicitly
-// declined for it. This means every newly-added guest counts by default, and
-// "deselecting" a guest for an event is just setting their RSVP status to
-// Declined on the Guests page -- no separate toggle needed.
-//
-// Counted from the full guest list minus the declined ones, so a guest who has
-// no RSVP record yet for an event (e.g. the event was added after they were)
-// still counts instead of silently dropping out.
-//
-// Plus-ones who are allowed but not named yet count too (they'll be at the
-// event even though their name isn't known), unless their host has declined.
-// They are counted as adults, since nothing says otherwise until they are named.
-export function includedGuestCount(eventId: string, rsvps: GuestRsvp[], guests: Guest[]): GuestCount {
-  const declined = new Set(rsvps.filter((r) => r.event_id === eventId && r.status === "declined").map((r) => r.guest_id));
-  const attending = guests.filter((g) => !declined.has(g.id));
-  const children = attending.filter(isChild).length;
-  let unnamed = 0;
-  for (const [hostId, n] of unnamedPlusOnes(guests)) if (!declined.has(hostId)) unnamed += n;
-  const adults = attending.length - children + unnamed;
-  return { adults, children, total: adults + children };
+const pluralise = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+// "120 adults, 6 teens, 4 children": groups with nobody in them are left out (adults are always shown).
+export function describeGuests(c: Pick<GuestCount, "adults" | "teens" | "children">) {
+  return [pluralise(c.adults, "adult", "adults"), c.teens ? pluralise(c.teens, "teen", "teens") : "", c.children ? pluralise(c.children, "child", "children") : ""]
+    .filter(Boolean)
+    .join(", ");
 }
 
-export function guestCountsByEvent(eventIds: string[], rsvps: GuestRsvp[], guests: Guest[]): Record<string, GuestCount> {
-  return Object.fromEntries(eventIds.map((id) => [id, includedGuestCount(id, rsvps, guests)]));
+function countOf(guests: Guest[], unnamedAdults: number): GuestCount {
+  const teens = guests.filter((g) => ageGroupOf(g) === "teen").length;
+  const children = guests.filter((g) => ageGroupOf(g) === "child").length;
+  const adults = guests.length - teens - children + unnamedAdults;
+  return { adults, teens, children, total: adults + teens + children };
 }
 
-// Everyone on the guest list, whatever events they are at: the figure for "the total budget for N guests".
+// Two headcounts per event. Everyone INVITED to it (whatever they have replied, so including those who have
+// declined) is who the estimate is priced for: the plan if the whole invite list came. Those who have ACCEPTED are
+// who the actual is priced for: what it costs as replies come in.
+export interface EventGuests {
+  invited: GuestCount;
+  accepted: GuestCount;
+}
+
+// A guest is invited to an event if their RSVP row is anything but "not invited" (invited, accepted or declined). A
+// guest with no row for an event (say the event was added after them) is not invited to it.
+//
+// Plus-ones who are allowed but not named yet count too: they are invited when their host is, and counted as
+// accepted when their host has accepted (they'll be at the event even though their name isn't known). They are
+// counted as adults, since nothing says otherwise until they are named.
+function countGroup(guests: Guest[], statusOf: (id: string) => RsvpStatus | undefined): EventGuests {
+  const invitedStatus = (id: string) => {
+    const s = statusOf(id);
+    return s === "invited" || s === "confirmed" || s === "declined";
+  };
+  const invited = guests.filter((g) => invitedStatus(g.id));
+  const accepted = guests.filter((g) => statusOf(g.id) === "confirmed");
+  let unnamedInvited = 0;
+  let unnamedAccepted = 0;
+  for (const [hostId, n] of unnamedPlusOnes(guests)) {
+    if (invitedStatus(hostId)) unnamedInvited += n;
+    if (statusOf(hostId) === "confirmed") unnamedAccepted += n;
+  }
+  return { invited: countOf(invited, unnamedInvited), accepted: countOf(accepted, unnamedAccepted) };
+}
+
+export function eventGuests(eventId: string, rsvps: GuestRsvp[], guests: Guest[]): EventGuests {
+  const status = new Map(rsvps.filter((r) => r.event_id === eventId).map((r) => [r.guest_id, r.status]));
+  return countGroup(guests, (id) => status.get(id));
+}
+
+// The key for "everyone on the guest list", used by a per-guest expense that isn't tied to one event (say, a package
+// covering the ceremony and the reception). A guest is invited if they are invited to any event, and accepted if
+// they have accepted any.
+export const ALL_GUESTS = "all";
+
+export function guestCountsByEvent(eventIds: string[], rsvps: GuestRsvp[], guests: Guest[]): Record<string, EventGuests> {
+  const any = new Map<string, RsvpStatus>();
+  for (const r of rsvps) {
+    const rank = { not_invited: 0, declined: 1, invited: 2, confirmed: 3 } as const;
+    const prev = any.get(r.guest_id);
+    if (!prev || rank[r.status] > rank[prev]) any.set(r.guest_id, r.status);
+  }
+  return {
+    ...Object.fromEntries(eventIds.map((id) => [id, eventGuests(id, rsvps, guests)])),
+    [ALL_GUESTS]: countGroup(guests, (id) => any.get(id)),
+  };
+}
+
+// Everyone on the guest list, whether or not they have been invited yet.
 export function guestListCount(guests: Guest[]): GuestCount {
-  const children = guests.filter(isChild).length;
-  const adults = guests.length - children + totalUnnamedGuests(guests);
-  return { adults, children, total: adults + children };
+  let unnamed = 0;
+  for (const v of unnamedPlusOnes(guests).values()) unnamed += v;
+  return countOf(guests, unnamed);
 }
 
-function totalUnnamedGuests(guests: Guest[]) {
-  let n = 0;
-  for (const v of unnamedPlusOnes(guests).values()) n += v;
-  return n;
-}
-
-// What a per-guest line costs, and how. Adults are charged the line's rate and children their own rate (the adult
-// rate when none is set). If the supplier has a minimum number of guests and there are fewer, the missing places are
-// charged at the adult rate, so the cost never drops below what the minimum would be.
+// What a per-guest line costs, and how. Adults are charged the line's rate, teens and children their own rates (the
+// adult rate when none is set). If the supplier has a minimum number of guests and there are fewer, the missing places
+// are charged at the adult rate, so the cost never drops below what the minimum would be.
 export interface PerGuestBreakdown {
   adults: number;
+  teens: number;
   children: number;
   adultRate: number;
+  teenRate: number;
   childRate: number;
   adultCost: number;
+  teenCost: number;
   childCost: number;
   minimum: number | null; // the supplier's minimum, if any
   shortfall: number; // guests short of the minimum (0 when there are enough)
@@ -90,41 +131,66 @@ export interface PerGuestBreakdown {
 }
 
 export function perGuestBreakdown(
-  item: Pick<BudgetItem, "per_guest_cost" | "child_cost" | "min_guests">,
-  count: Pick<GuestCount, "adults" | "children">
+  item: Pick<BudgetItem, "per_guest_cost" | "child_cost" | "teen_cost" | "min_guests">,
+  count: Pick<GuestCount, "adults" | "teens" | "children">
 ): PerGuestBreakdown {
   const adultRate = Number(item.per_guest_cost ?? 0);
+  const teenRate = item.teen_cost != null ? Number(item.teen_cost) : adultRate;
   const childRate = item.child_cost != null ? Number(item.child_cost) : adultRate;
   const minimum = item.min_guests != null && Number(item.min_guests) > 0 ? Number(item.min_guests) : null;
-  const shortfall = minimum ? Math.max(0, minimum - (count.adults + count.children)) : 0;
+  const shortfall = minimum ? Math.max(0, minimum - (count.adults + count.teens + count.children)) : 0;
   const adultCost = adultRate * count.adults;
+  const teenCost = teenRate * count.teens;
   const childCost = childRate * count.children;
   const shortfallCost = adultRate * shortfall;
   return {
     adults: count.adults,
+    teens: count.teens,
     children: count.children,
     adultRate,
+    teenRate,
     childRate,
     adultCost,
+    teenCost,
     childCost,
     minimum,
     shortfall,
     shortfallCost,
-    total: adultCost + childCost + shortfallCost,
+    total: adultCost + teenCost + childCost + shortfallCost,
   };
 }
 
-const NO_GUESTS: GuestCount = { adults: 0, children: 0, total: 0 };
+export const NO_GUESTS: GuestCount = { adults: 0, teens: 0, children: 0, total: 0 };
+export const NO_EVENT_GUESTS: EventGuests = { invited: NO_GUESTS, accepted: NO_GUESTS };
 
-// The live estimated cost for a budget item: for a per-guest item linked to
-// an event, this is always recalculated from the current guest count rather
-// than read from the stored estimated_cost column, so it updates the moment
-// a guest is added, removed, declined or marked as a child -- no need to re-save the item.
-export function resolvedEstimatedCost(item: BudgetItem, guestCounts: Record<string, GuestCount>) {
-  if (item.cost_type === "per_guest" && item.event_id && item.per_guest_cost != null) {
-    return perGuestBreakdown(item, guestCounts[item.event_id] ?? NO_GUESTS).total;
-  }
+const isPerGuest = (item: BudgetItem) => item.cost_type === "per_guest" && item.per_guest_cost != null;
+const guestsFor = (item: BudgetItem, counts: Record<string, EventGuests>) => counts[item.event_id ?? ALL_GUESTS] ?? NO_EVENT_GUESTS;
+
+// The live ESTIMATED cost of a budget item. For a per-guest item it is priced for everyone invited (linked to an
+// event, that event's invited guests; not linked, everyone invited to anything), and recalculated whenever a guest is
+// added, invited, or moved between adult, teen and child -- no need to re-save the item.
+export function resolvedEstimatedCost(item: BudgetItem, counts: Record<string, EventGuests>) {
+  if (isPerGuest(item)) return perGuestBreakdown(item, guestsFor(item, counts).invited).total;
   return Number(item.estimated_cost);
+}
+
+// The ACTUAL cost so far. For a per-guest item it is priced for the guests who have accepted (so any minimum number
+// of guests shows up as places paid for but not yet filled); for anything else it is the actual amount entered, or the
+// estimate when none has been.
+export function resolvedActualCost(item: BudgetItem, counts: Record<string, EventGuests>) {
+  if (isPerGuest(item)) return perGuestBreakdown(item, guestsFor(item, counts).accepted).total;
+  return Number(item.actual_cost ?? resolvedEstimatedCost(item, counts));
+}
+
+// How much of an item's estimate is fixed and how much depends on the number of guests. A flat cost is all fixed. On
+// a per-guest item with a minimum number of guests, the value of that minimum (the minimum x the adult rate) is
+// fixed: it is paid whoever comes. Only the cost above it depends on the guests.
+export function costSplit(item: BudgetItem, counts: Record<string, EventGuests>) {
+  const total = resolvedEstimatedCost(item, counts);
+  if (!isPerGuest(item)) return { fixed: total, variable: 0 };
+  const minimumValue = item.min_guests && Number(item.min_guests) > 0 ? Number(item.min_guests) * Number(item.per_guest_cost) : 0;
+  const fixed = Math.min(total, minimumValue);
+  return { fixed, variable: total - fixed };
 }
 
 export interface CategoryTotal {
@@ -138,11 +204,11 @@ export interface CategoryTotal {
 // "Actual" falls back to the live estimate when no actual cost has been
 // entered yet, matching the same fallback used in the budget page's running
 // totals.
-export function categoryTotals(items: BudgetItem[], guestCounts: Record<string, GuestCount>): CategoryTotal[] {
+export function categoryTotals(items: BudgetItem[], guestCounts: Record<string, EventGuests>): CategoryTotal[] {
   const byCategory = new Map<string, CategoryTotal>();
   for (const item of items) {
     const estimated = resolvedEstimatedCost(item, guestCounts);
-    const actual = Number(item.actual_cost ?? estimated);
+    const actual = resolvedActualCost(item, guestCounts);
     const paid = Number(item.amount_paid);
     const existing = byCategory.get(item.category);
     if (existing) {
@@ -163,8 +229,8 @@ export interface BudgetVariance {
 }
 
 // Positive variance = over the estimate; negative = under it.
-export function totalVariance(items: BudgetItem[], guestCounts: Record<string, GuestCount>): BudgetVariance {
+export function totalVariance(items: BudgetItem[], guestCounts: Record<string, EventGuests>): BudgetVariance {
   const estimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
-  const actual = items.reduce((sum, i) => sum + Number(i.actual_cost ?? resolvedEstimatedCost(i, guestCounts)), 0);
+  const actual = items.reduce((sum, i) => sum + resolvedActualCost(i, guestCounts), 0);
   return { estimated, actual, variance: actual - estimated };
 }

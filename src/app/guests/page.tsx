@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { GuestFormDialog } from "@/components/guests/guest-form-dialog";
 import { AgeBadge } from "@/components/guests/age-badge";
+import { ageGroupOf, describeGuests, guestListCount } from "@/lib/budget";
 import { GuestSearch } from "@/components/guests/guest-search";
 import { ImportGuestsDialog } from "@/components/guests/import-guests-dialog";
 import { RsvpCell } from "@/components/guests/rsvp-cell";
@@ -70,7 +71,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
             {totalUnnamed(guests) > 0
               ? ` (${guests.length} named, ${totalUnnamed(guests)} +1${totalUnnamed(guests) === 1 ? "" : "s"} not named yet)`
               : ""}
-            {guests.some((g) => g.age_group === "child") ? ` · ${guests.filter((g) => g.age_group === "child").length} child${guests.filter((g) => g.age_group === "child").length === 1 ? "" : "ren"}` : ""}
+            {guests.some((g) => ageGroupOf(g) !== "adult") ? ` · ${describeGuests(guestListCount(guests))}` : ""}
             . Mark a guest{" "}
             <span className="text-status-critical">Declined</span> for an event to exclude them from that
             event&apos;s per-guest budget costs.
@@ -133,7 +134,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
               const searchText = [
                 guest.title,
                 guestFullName(guest),
-                guest.age_group === "child" ? "child" : "adult",
+                guest.age_group === "child" || guest.age_group === "teen" ? guest.age_group : "adult",
                 guest.tag,
                 guest.email,
                 guest.phone,
@@ -152,7 +153,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                 <TableRow key={guest.id} data-guest-row="" data-search={searchText} data-digits={(guest.phone ?? "").replace(/\D/g, "")}>
                   <TableCell data-span="full" className="max-w-[18rem] font-medium whitespace-normal">
                     <div>{[guest.title, guestFullName(guest)].filter(Boolean).join(" ")}</div>
-                    <AgeBadge key={`${guest.id}-${guest.age_group ?? "adult"}`} guestId={guest.id} ageGroup={guest.age_group === "child" ? "child" : "adult"} />
+                    <AgeBadge key={`${guest.id}-${guest.age_group ?? "adult"}`} guestId={guest.id} ageGroup={ageGroupOf(guest)} />
                     {guest.tag && (
                       <Badge variant="outline" className="mt-1 mr-1 font-normal">
                         {guest.tag}

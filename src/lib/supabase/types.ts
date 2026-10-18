@@ -78,7 +78,7 @@ export interface GuestRsvp {
 }
 
 export type BudgetCostType = "flat" | "per_guest";
-export type AgeGroup = "adult" | "child";
+export type AgeGroup = "adult" | "teen" | "child";
 
 export interface BudgetItem {
   id: string;
@@ -93,6 +93,7 @@ export interface BudgetItem {
   cost_type: BudgetCostType;
   per_guest_cost: number | null;
   child_cost?: number | null; // migration 0014: the rate for a child; blank = same as an adult
+  teen_cost?: number | null; // migration 0015: the rate for a teen; blank = same as an adult
   min_guests?: number | null; // migration 0014: the supplier's minimum number of guests; blank = none
   notes: string | null;
   created_at: string;

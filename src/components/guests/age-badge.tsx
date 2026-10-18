@@ -7,15 +7,16 @@ import { updateGuest } from "@/app/actions/guests";
 import type { AgeGroup } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
-// Adult or child, in one click. A child is priced at the child rate (and an adult at the adult rate) on every
-// per-guest expense on the Budget page, so this is what drives the pricing.
+const LABELS: Record<AgeGroup, string> = { adult: "Adult", teen: "Teen", child: "Child" };
+
+// Adult, teen or child, chosen in place. Each group has its own rate on every per-guest expense on the Budget page, so
+// this is what drives the pricing.
 export function AgeBadge({ guestId, ageGroup }: { guestId: string; ageGroup: AgeGroup }) {
   const router = useRouter();
   const [current, setCurrent] = useState<AgeGroup>(ageGroup);
   const [pending, start] = useTransition();
-  const next: AgeGroup = current === "child" ? "adult" : "child";
 
-  function toggle() {
+  function change(next: AgeGroup) {
     const before = current;
     setCurrent(next);
     start(async () => {
@@ -25,24 +26,28 @@ export function AgeBadge({ guestId, ageGroup }: { guestId: string; ageGroup: Age
       } catch (err) {
         setCurrent(before);
         const message = err instanceof Error ? err.message : "";
-        toast.error(/age_group/i.test(message) ? "Run migration 0014 in Supabase first, then try again." : message || "Couldn't change that guest.");
+        toast.error(/age_group/i.test(message) ? "Run migrations 0014 and 0015 in Supabase first, then try again." : message || "Couldn't change that guest.");
       }
     });
   }
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
+    <select
+      value={current}
       disabled={pending}
-      title={`${current === "child" ? "Child" : "Adult"}: click to change to ${next}`}
+      onChange={(e) => change(e.target.value as AgeGroup)}
+      aria-label="Adult, teen or child"
       className={cn(
-        "mt-1 mr-1 inline-flex h-5 items-center rounded-full border px-2 text-xs font-normal transition-colors",
-        current === "child" ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary",
+        "mt-1 mr-1 h-5 cursor-pointer appearance-none rounded-full border bg-transparent px-2 text-xs font-normal transition-colors",
+        current === "adult" ? "text-muted-foreground hover:bg-secondary" : "border-primary bg-primary text-primary-foreground",
         pending && "opacity-60"
       )}
     >
-      {current === "child" ? "Child" : "Adult"}
-    </button>
+      {(Object.keys(LABELS) as AgeGroup[]).map((g) => (
+        <option key={g} value={g} className="bg-card text-foreground">
+          {LABELS[g]}
+        </option>
+      ))}
+    </select>
   );
 }

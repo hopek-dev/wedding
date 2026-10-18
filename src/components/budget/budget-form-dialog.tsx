@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { createBudgetItem, updateBudgetItem } from "@/app/actions/budget";
 import { formatGBP } from "@/lib/format";
-import { perGuestBreakdown, type GuestCount } from "@/lib/budget";
+import { ALL_GUESTS, NO_EVENT_GUESTS, perGuestBreakdown, type EventGuests } from "@/lib/budget";
 import type { BudgetCostType, BudgetItem, WeddingEvent } from "@/lib/supabase/types";
 import { Pencil, Plus } from "lucide-react";
 
@@ -36,7 +36,7 @@ export function BudgetFormDialog({
 }: {
   events: WeddingEvent[];
   categories: string[];
-  guestCounts: Record<string, GuestCount>;
+  guestCounts: Record<string, EventGuests>;
   item?: BudgetItem;
 }) {
   const router = useRouter();
@@ -45,6 +45,7 @@ export function BudgetFormDialog({
   const [costType, setCostType] = useState<BudgetCostType>(item?.cost_type ?? "flat");
   const [eventId, setEventId] = useState(item?.event_id ?? "none");
   const [perGuestCost, setPerGuestCost] = useState(item?.per_guest_cost?.toString() ?? "");
+  const [teenCost, setTeenCost] = useState(item?.teen_cost != null ? String(item.teen_cost) : "");
   const [childCost, setChildCost] = useState(item?.child_cost != null ? String(item.child_cost) : "");
   const [minGuests, setMinGuests] = useState(item?.min_guests != null ? String(item.min_guests) : "");
   const [category, setCategory] = useState(item?.category ?? "");
@@ -52,13 +53,17 @@ export function BudgetFormDialog({
   const isEdit = !!item;
 
   const isPerGuest = costType === "per_guest";
-  const counts = eventId !== "none" ? (guestCounts[eventId] ?? { adults: 0, children: 0, total: 0 }) : null;
-  const preview = counts
-    ? perGuestBreakdown(
-        { per_guest_cost: Number(perGuestCost) || 0, child_cost: childCost.trim() !== "" ? Number(childCost) || 0 : null, min_guests: Number(minGuests) > 0 ? Number(minGuests) : null },
-        counts
-      )
-    : null;
+  // linked to an event: that event's guests; not linked: everyone on the guest list. The estimate is for everyone invited,
+  // the actual (so far) for the guests who have accepted.
+  const counts = guestCounts[eventId !== "none" ? eventId : ALL_GUESTS] ?? NO_EVENT_GUESTS;
+  const rates = {
+    per_guest_cost: Number(perGuestCost) || 0,
+    teen_cost: teenCost.trim() !== "" ? Number(teenCost) || 0 : null,
+    child_cost: childCost.trim() !== "" ? Number(childCost) || 0 : null,
+    min_guests: Number(minGuests) > 0 ? Number(minGuests) : null,
+  };
+  const preview = perGuestBreakdown(rates, counts.invited);
+  const actualSoFar = perGuestBreakdown(rates, counts.accepted);
   const eventName = events.find((e) => e.id === eventId)?.name;
   const eventLabel = (v: string) => (v === "none" ? "General / not event-specific" : (events.find((e) => e.id === v)?.name ?? ""));
   const costTypeLabel = (v: BudgetCostType) => (v === "per_guest" ? "Per guest attending the event" : "Flat amount");
@@ -67,6 +72,7 @@ export function BudgetFormDialog({
   async function handleSubmit(formData: FormData) {
     setSaving(true);
     try {
+      const teenCostNum = teenCost.trim() !== "" ? Number(teenCost) || 0 : null;
       const childCostNum = childCost.trim() !== "" ? Number(childCost) || 0 : null;
       const minGuestsNum = Number(minGuests) > 0 ? Math.round(Number(minGuests)) : null;
       const input = {
@@ -76,9 +82,10 @@ export function BudgetFormDialog({
         cost_type: costType,
         per_guest_cost: isPerGuest ? Number(perGuestCost) || 0 : null,
         // the child rate and the minimum are only sent when there is something to set or to clear (see createBudgetItem)
+        ...(isPerGuest && teenCostNum != null ? { teen_cost: teenCostNum } : item?.teen_cost != null ? { teen_cost: null } : {}),
         ...(isPerGuest && childCostNum != null ? { child_cost: childCostNum } : item?.child_cost != null ? { child_cost: null } : {}),
         ...(isPerGuest && minGuestsNum != null ? { min_guests: minGuestsNum } : item?.min_guests != null ? { min_guests: null } : {}),
-        estimated_cost: isPerGuest ? (preview?.total ?? 0) : Number(formData.get("estimated_cost")) || 0,
+        estimated_cost: isPerGuest ? preview.total : Number(formData.get("estimated_cost")) || 0,
         actual_cost: formData.get("actual_cost")
           ? Number(formData.get("actual_cost"))
           : undefined,
@@ -208,10 +215,14 @@ export function BudgetFormDialog({
 
           {isPerGuest ? (
             <div key="per_guest_cost" className="grid gap-3 rounded-lg border bg-muted/40 p-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="grid gap-2">
                   <Label htmlFor="per_guest_cost">Adult (£ each)</Label>
                   <Input id="per_guest_cost" type="number" min="0" step="0.01" value={perGuestCost} onChange={(e) => setPerGuestCost(e.target.value)} required />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="teen_cost">Teen (£ each)</Label>
+                  <Input id="teen_cost" type="number" min="0" step="0.01" value={teenCost} onChange={(e) => setTeenCost(e.target.value)} placeholder="Same as adult" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="child_cost">Child (£ each)</Label>
@@ -226,11 +237,15 @@ export function BudgetFormDialog({
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
-                {!preview ? (
-                  "Select a linked event above to calculate the total automatically."
-                ) : (
+                {
                   <>
                     {preview.adults} adult{preview.adults === 1 ? "" : "s"} × {formatGBP(preview.adultRate)}
+                    {preview.teens > 0 && (
+                      <>
+                        {" "}
+                        + {preview.teens} teen{preview.teens === 1 ? "" : "s"} × {formatGBP(preview.teenRate)}
+                      </>
+                    )}
                     {preview.children > 0 && (
                       <>
                         {" "}
@@ -243,9 +258,10 @@ export function BudgetFormDialog({
                         + {preview.shortfall} to reach the minimum of {preview.minimum} × {formatGBP(preview.adultRate)}
                       </>
                     )}{" "}
-                    = <strong>{formatGBP(preview.total)}</strong> for {eventName}. Updates automatically as guests are added, declined or marked as children.
+                    = <strong>{formatGBP(preview.total)}</strong> estimated, for all {counts.invited.total} guests invited{eventId === "none" ? "" : ` to ${eventName}`}. The actual so far is{" "}
+                    <strong>{formatGBP(actualSoFar.total)}</strong>, for the {counts.accepted.total} who have accepted{actualSoFar.shortfall > 0 ? ` plus ${actualSoFar.shortfall} places to reach the minimum` : ""}. Both update as guests reply or move between adult, teen and child.
                   </>
-                )}
+                }
               </p>
             </div>
           ) : (
@@ -264,17 +280,24 @@ export function BudgetFormDialog({
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="actual_cost">Actual (£)</Label>
-              <Input
-                id="actual_cost"
-                name="actual_cost"
-                type="number"
-                min="0"
-                step="0.01"
-                defaultValue={item?.actual_cost ?? ""}
-              />
-            </div>
+            {isPerGuest ? (
+              <div className="grid content-start gap-2">
+                <Label>Actual</Label>
+                <p className="text-xs text-muted-foreground">Worked out from the guests who have accepted.</p>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                <Label htmlFor="actual_cost">Actual (£)</Label>
+                <Input
+                  id="actual_cost"
+                  name="actual_cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={item?.actual_cost ?? ""}
+                />
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="amount_paid">Paid (£)</Label>
               <Input
