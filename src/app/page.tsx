@@ -80,8 +80,9 @@ export default async function DashboardPage() {
 
   const budgetByCategory = categoryTotals(budgetItems, guestCounts);
   const variance = totalVariance(budgetItems, guestCounts);
-  const amountOwed = Math.max(variance.actual - totalPaid, 0);
-  const paidPct = variance.actual > 0 ? Math.min(100, (totalPaid / variance.actual) * 100) : 0;
+  // what is still owed is worked out against what the budget is expected to come to (the actual where there is one, else the estimate)
+  const amountOwed = Math.max(variance.expected - totalPaid, 0);
+  const paidPct = variance.expected > 0 ? Math.min(100, (totalPaid / variance.expected) * 100) : 0;
 
   return (
     <div className="grid gap-8">
@@ -202,7 +203,7 @@ export default async function DashboardPage() {
               <div>
                 <Progress value={paidPct} />
                 <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-                  <span>{Math.round(paidPct)}% of actual paid</span>
+                  <span>{Math.round(paidPct)}% of expected total paid</span>
                   {amountOwed > 0 && <span>{formatGBP(amountOwed)} owed</span>}
                 </div>
               </div>

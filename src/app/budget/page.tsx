@@ -38,7 +38,7 @@ export default async function BudgetPage() {
 
   // Estimated is priced for everyone invited; actual for the guests who have accepted (see src/lib/budget.ts).
   const totalEstimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
-  const totalActual = items.reduce((sum, i) => sum + resolvedActualCost(i, guestCounts), 0);
+  const totalActual = items.reduce((sum, i) => sum + (resolvedActualCost(i, guestCounts) ?? 0), 0);
   const totalPaid = items.reduce((sum, i) => sum + Number(i.amount_paid), 0);
 
   // The budget in terms of guests: who it is for, what part is fixed (flat costs, and the value of any minimum number of
@@ -56,7 +56,7 @@ export default async function BudgetPage() {
   // guests it is priced for (estimate: everyone invited; actual: the guests who have accepted).
   const guestItems = items.filter(isPerGuestItem);
   const guestEstimated = guestItems.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
-  const guestActual = guestItems.reduce((sum, i) => sum + resolvedActualCost(i, guestCounts), 0);
+  const guestActual = guestItems.reduce((sum, i) => sum + (resolvedActualCost(i, guestCounts) ?? 0), 0);
   const perHead = (total: number, heads: number) => (heads > 0 ? formatGBP(total / heads) : "—");
   const perGuestCards = [
     { title: "Per guest: whole budget", hint: "every expense", estimated: totalEstimated, actual: totalActual },
@@ -95,7 +95,7 @@ export default async function BudgetPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg font-semibold sm:text-2xl">{formatGBP(totalActual)}</div>
-            <div className="text-xs text-muted-foreground">{everyone.accepted.total} accepted so far</div>
+            <div className="text-xs text-muted-foreground">actual figures only</div>
           </CardContent>
         </Card>
         <Card>

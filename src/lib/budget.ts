@@ -174,12 +174,20 @@ export function resolvedEstimatedCost(item: BudgetItem, counts: Record<string, E
   return Number(item.estimated_cost);
 }
 
-// The ACTUAL cost so far. For a per-guest item it is priced for the guests who have accepted (so any minimum number
-// of guests shows up as places paid for but not yet filled); for anything else it is the actual amount entered, or the
-// estimate when none has been.
-export function resolvedActualCost(item: BudgetItem, counts: Record<string, EventGuests>) {
+// The ACTUAL cost so far, or null when there is none to count yet. Actuals only add up actual figures: for a per-guest
+// item it is priced for the guests who have accepted (so any minimum number of guests shows up as places paid for but
+// not yet filled); for anything else it is the actual amount entered, and an expense with none entered has no actual
+// (it is never filled in from the estimate).
+export function resolvedActualCost(item: BudgetItem, counts: Record<string, EventGuests>): number | null {
   if (isPerGuest(item)) return perGuestBreakdown(item, guestsFor(item, counts).accepted).total;
-  return Number(item.actual_cost ?? resolvedEstimatedCost(item, counts));
+  return item.actual_cost != null ? Number(item.actual_cost) : null;
+}
+
+// What an item is expected to cost in the end, for working out what is still owed: the actual where there is one,
+// otherwise the estimate. (A per-guest item is expected to cost its estimate, for everyone invited.)
+export function resolvedExpectedCost(item: BudgetItem, counts: Record<string, EventGuests>) {
+  if (isPerGuest(item)) return resolvedEstimatedCost(item, counts);
+  return item.actual_cost != null ? Number(item.actual_cost) : resolvedEstimatedCost(item, counts);
 }
 
 // How much of an item's estimate is fixed and how much depends on the number of guests. A flat cost is all fixed. On
@@ -201,14 +209,13 @@ export interface CategoryTotal {
 }
 
 // Estimated vs actual vs paid spend per category, for the dashboard chart.
-// "Actual" falls back to the live estimate when no actual cost has been
-// entered yet, matching the same fallback used in the budget page's running
-// totals.
+// "Actual" only adds up the actual figures that exist (see resolvedActualCost): an
+// expense with no actual entered adds nothing to it.
 export function categoryTotals(items: BudgetItem[], guestCounts: Record<string, EventGuests>): CategoryTotal[] {
   const byCategory = new Map<string, CategoryTotal>();
   for (const item of items) {
     const estimated = resolvedEstimatedCost(item, guestCounts);
-    const actual = resolvedActualCost(item, guestCounts);
+    const actual = resolvedActualCost(item, guestCounts) ?? 0;
     const paid = Number(item.amount_paid);
     const existing = byCategory.get(item.category);
     if (existing) {
@@ -224,13 +231,25 @@ export function categoryTotals(items: BudgetItem[], guestCounts: Record<string, 
 
 export interface BudgetVariance {
   estimated: number;
-  actual: number;
-  variance: number;
+  actual: number; // only the actuals that exist
+  variance: number; // over (+) or under (-) the estimate, on the expenses that have an actual
+  expected: number; // the actual where there is one, otherwise the estimate: what the whole budget is expected to come to
 }
 
-// Positive variance = over the estimate; negative = under it.
 export function totalVariance(items: BudgetItem[], guestCounts: Record<string, EventGuests>): BudgetVariance {
-  const estimated = items.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
-  const actual = items.reduce((sum, i) => sum + resolvedActualCost(i, guestCounts), 0);
-  return { estimated, actual, variance: actual - estimated };
+  let estimated = 0;
+  let actual = 0;
+  let variance = 0;
+  let expected = 0;
+  for (const i of items) {
+    const est = resolvedEstimatedCost(i, guestCounts);
+    const act = resolvedActualCost(i, guestCounts);
+    estimated += est;
+    expected += resolvedExpectedCost(i, guestCounts);
+    if (act != null) {
+      actual += act;
+      variance += act - est;
+    }
+  }
+  return { estimated, actual, variance, expected };
 }
