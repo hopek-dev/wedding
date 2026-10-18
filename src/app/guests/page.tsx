@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { GuestFormDialog } from "@/components/guests/guest-form-dialog";
+import { GuestSearch } from "@/components/guests/guest-search";
 import { ImportGuestsDialog } from "@/components/guests/import-guests-dialog";
 import { RsvpCell } from "@/components/guests/rsvp-cell";
 import { InviteAllButton } from "@/components/guests/invite-all-button";
@@ -83,6 +84,8 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
         </div>
       </div>
 
+      <GuestSearch key={activeTag} total={shownGuests.length} />
+
       {tags.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Guest list:</span>
@@ -123,8 +126,27 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
               // An import note like "Plus one of Franco" that never got linked
               // (host not on the list) still deserves to show.
               const noteHost = !inviter ? guest.notes?.match(/plus[\s-]*one\s+of\s+(.+)/i)?.[1]?.trim() : undefined;
+              // What the search box looks through for this guest (see GuestSearch).
+              const answerWord = (id: string) => ({ confirmed: "accepted", invited: "pending", declined: "declined", not_invited: "not invited" })[rsvpByGuestAndEvent.get(`${guest.id}:${id}`) ?? "not_invited"];
+              const searchText = [
+                guest.title,
+                guestFullName(guest),
+                guest.tag,
+                guest.email,
+                guest.phone,
+                guest.notes,
+                inviter && `plus one of ${guestFullName(inviter)}`,
+                ...plusOnes.map((p) => `plus one ${guestFullName(p)}`),
+                stayLabel(guest.accommodation),
+                ...(dietaryByGuest.get(guest.id) ?? []),
+                guest.song_request,
+                ...events.map((e) => `${e.name} ${answerWord(e.id)}`),
+              ]
+                .filter(Boolean)
+                .join(" | ")
+                .toLowerCase();
               return (
-                <TableRow key={guest.id}>
+                <TableRow key={guest.id} data-guest-row="" data-search={searchText} data-digits={(guest.phone ?? "").replace(/\D/g, "")}>
                   <TableCell data-span="full" className="max-w-[18rem] font-medium whitespace-normal">
                     <div>{[guest.title, guestFullName(guest)].filter(Boolean).join(" ")}</div>
                     {guest.tag && (

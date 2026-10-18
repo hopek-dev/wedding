@@ -198,3 +198,6 @@
 @media (pointer: coarse) {
   [data-slot="button"] { min-height: 2.25rem; min-width: 2.25rem; }
 }
+
+/* A guest row hidden by the guests search box. */
+.search-hide { display: none !important; }
