@@ -33,6 +33,7 @@ export async function createGuest(input: {
   phone?: string;
   plus_one_of?: string | null;
   notes?: string;
+  age_group?: "adult" | "child";
 }) {
   await requireAdmin();
   const supabase = createServiceClient();

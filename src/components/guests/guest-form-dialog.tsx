@@ -55,6 +55,9 @@ export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Gu
         phone: (formData.get("phone") as string) || undefined,
         plus_one_of: plusOneOf === "none" ? null : plusOneOf,
         notes: (formData.get("notes") as string) || undefined,
+        // only sent when it matters (a child, or changing a guest back to an adult), so adding an adult still works
+        // on a database that hasn't had migration 0014 yet
+        ...(formData.get("age_group") === "child" ? { age_group: "child" as const } : isEdit && guest.age_group === "child" ? { age_group: "adult" as const } : {}),
       };
       if (isEdit) {
         await updateGuest(guest.id, input);
@@ -149,6 +152,19 @@ export function GuestFormDialog({ guests, guest }: { guests: Guest[]; guest?: Gu
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="age_group">Adult or child</Label>
+            <Select name="age_group" defaultValue={guest?.age_group === "child" ? "child" : "adult"}>
+              <SelectTrigger id="age_group" className="w-full">
+                <SelectValue>{(v: string) => (v === "child" ? "Child" : "Adult")}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="adult">Adult</SelectItem>
+                <SelectItem value="child">Child</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Children are charged the child rate on per-guest expenses in the budget.</p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes</Label>

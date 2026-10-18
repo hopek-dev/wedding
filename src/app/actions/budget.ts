@@ -27,11 +27,20 @@ export async function createBudgetItem(input: {
   status?: BudgetItem["status"];
   cost_type?: BudgetItem["cost_type"];
   per_guest_cost?: number | null;
+  child_cost?: number | null;
+  min_guests?: number | null;
   notes?: string;
 }) {
   await requireAdmin();
   const supabase = createServiceClient();
-  const { error } = await supabase.from("budget_items").insert(input);
+  // The child rate and the minimum are only sent when they are set, so a database that hasn't had migration 0014
+  // yet still takes every other expense.
+  const { child_cost, min_guests, ...rest } = input;
+  const { error } = await supabase.from("budget_items").insert({
+    ...rest,
+    ...(child_cost != null ? { child_cost } : {}),
+    ...(min_guests != null ? { min_guests } : {}),
+  });
   if (error) throw error;
   revalidatePath("/");
   revalidatePath("/budget");

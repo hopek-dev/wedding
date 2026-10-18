@@ -37,6 +37,7 @@ export interface Guest {
   invite_channel: string | null;
   accommodation?: string | null; // migration 0009
   song_request?: string | null; // migration 0013
+  age_group?: AgeGroup; // migration 0014; a guest without it is an adult
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -77,6 +78,7 @@ export interface GuestRsvp {
 }
 
 export type BudgetCostType = "flat" | "per_guest";
+export type AgeGroup = "adult" | "child";
 
 export interface BudgetItem {
   id: string;
@@ -90,6 +92,8 @@ export interface BudgetItem {
   status: BudgetStatus;
   cost_type: BudgetCostType;
   per_guest_cost: number | null;
+  child_cost?: number | null; // migration 0014: the rate for a child; blank = same as an adult
+  min_guests?: number | null; // migration 0014: the supplier's minimum number of guests; blank = none
   notes: string | null;
   created_at: string;
   updated_at: string;

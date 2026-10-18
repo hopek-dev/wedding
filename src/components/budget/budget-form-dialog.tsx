@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { createBudgetItem, updateBudgetItem } from "@/app/actions/budget";
 import { formatGBP } from "@/lib/format";
+import { perGuestBreakdown, type GuestCount } from "@/lib/budget";
 import type { BudgetCostType, BudgetItem, WeddingEvent } from "@/lib/supabase/types";
 import { Pencil, Plus } from "lucide-react";
 
@@ -35,7 +36,7 @@ export function BudgetFormDialog({
 }: {
   events: WeddingEvent[];
   categories: string[];
-  guestCounts: Record<string, number>;
+  guestCounts: Record<string, GuestCount>;
   item?: BudgetItem;
 }) {
   const router = useRouter();
@@ -44,12 +45,20 @@ export function BudgetFormDialog({
   const [costType, setCostType] = useState<BudgetCostType>(item?.cost_type ?? "flat");
   const [eventId, setEventId] = useState(item?.event_id ?? "none");
   const [perGuestCost, setPerGuestCost] = useState(item?.per_guest_cost?.toString() ?? "");
+  const [childCost, setChildCost] = useState(item?.child_cost != null ? String(item.child_cost) : "");
+  const [minGuests, setMinGuests] = useState(item?.min_guests != null ? String(item.min_guests) : "");
   const [category, setCategory] = useState(item?.category ?? "");
   const [isNewCategory, setIsNewCategory] = useState(false);
   const isEdit = !!item;
 
   const isPerGuest = costType === "per_guest";
-  const guestCount = eventId !== "none" ? (guestCounts[eventId] ?? 0) : null;
+  const counts = eventId !== "none" ? (guestCounts[eventId] ?? { adults: 0, children: 0, total: 0 }) : null;
+  const preview = counts
+    ? perGuestBreakdown(
+        { per_guest_cost: Number(perGuestCost) || 0, child_cost: childCost.trim() !== "" ? Number(childCost) || 0 : null, min_guests: Number(minGuests) > 0 ? Number(minGuests) : null },
+        counts
+      )
+    : null;
   const eventName = events.find((e) => e.id === eventId)?.name;
   const eventLabel = (v: string) => (v === "none" ? "General / not event-specific" : (events.find((e) => e.id === v)?.name ?? ""));
   const costTypeLabel = (v: BudgetCostType) => (v === "per_guest" ? "Per guest attending the event" : "Flat amount");
@@ -58,16 +67,18 @@ export function BudgetFormDialog({
   async function handleSubmit(formData: FormData) {
     setSaving(true);
     try {
-      const perGuestCostNum = Number(perGuestCost) || 0;
+      const childCostNum = childCost.trim() !== "" ? Number(childCost) || 0 : null;
+      const minGuestsNum = Number(minGuests) > 0 ? Math.round(Number(minGuests)) : null;
       const input = {
         category,
         vendor_name: (formData.get("vendor_name") as string) || undefined,
         event_id: eventId === "none" ? null : eventId,
         cost_type: costType,
-        per_guest_cost: isPerGuest ? perGuestCostNum : null,
-        estimated_cost: isPerGuest
-          ? perGuestCostNum * (guestCount ?? 0)
-          : Number(formData.get("estimated_cost")) || 0,
+        per_guest_cost: isPerGuest ? Number(perGuestCost) || 0 : null,
+        // the child rate and the minimum are only sent when there is something to set or to clear (see createBudgetItem)
+        ...(isPerGuest && childCostNum != null ? { child_cost: childCostNum } : item?.child_cost != null ? { child_cost: null } : {}),
+        ...(isPerGuest && minGuestsNum != null ? { min_guests: minGuestsNum } : item?.min_guests != null ? { min_guests: null } : {}),
+        estimated_cost: isPerGuest ? (preview?.total ?? 0) : Number(formData.get("estimated_cost")) || 0,
         actual_cost: formData.get("actual_cost")
           ? Number(formData.get("actual_cost"))
           : undefined,
@@ -196,25 +207,43 @@ export function BudgetFormDialog({
           </div>
 
           {isPerGuest ? (
-            <div key="per_guest_cost" className="grid gap-2 rounded-lg border bg-muted/40 p-3">
-              <Label htmlFor="per_guest_cost">Cost per guest (£)</Label>
-              <Input
-                id="per_guest_cost"
-                type="number"
-                min="0"
-                step="0.01"
-                value={perGuestCost}
-                onChange={(e) => setPerGuestCost(e.target.value)}
-                required
-              />
+            <div key="per_guest_cost" className="grid gap-3 rounded-lg border bg-muted/40 p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="per_guest_cost">Adult (£ each)</Label>
+                  <Input id="per_guest_cost" type="number" min="0" step="0.01" value={perGuestCost} onChange={(e) => setPerGuestCost(e.target.value)} required />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="child_cost">Child (£ each)</Label>
+                  <Input id="child_cost" type="number" min="0" step="0.01" value={childCost} onChange={(e) => setChildCost(e.target.value)} placeholder="Same as adult" />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="min_guests">Minimum number of guests</Label>
+                <Input id="min_guests" type="number" min="0" step="1" value={minGuests} onChange={(e) => setMinGuests(e.target.value)} placeholder="No minimum" />
+                <p className="text-xs text-muted-foreground">
+                  If the supplier charges for a minimum number of guests, enter it. With fewer guests than that, the missing places are charged at the adult rate.
+                </p>
+              </div>
               <p className="text-xs text-muted-foreground">
-                {eventId === "none" ? (
+                {!preview ? (
                   "Select a linked event above to calculate the total automatically."
                 ) : (
                   <>
-                    {formatGBP(Number(perGuestCost) || 0)} × {guestCount} guest{guestCount === 1 ? "" : "s"} not
-                    declined for {eventName} = <strong>{formatGBP((Number(perGuestCost) || 0) * (guestCount ?? 0))}</strong>.
-                    Updates automatically as guests are added or declined.
+                    {preview.adults} adult{preview.adults === 1 ? "" : "s"} × {formatGBP(preview.adultRate)}
+                    {preview.children > 0 && (
+                      <>
+                        {" "}
+                        + {preview.children} child{preview.children === 1 ? "" : "ren"} × {formatGBP(preview.childRate)}
+                      </>
+                    )}
+                    {preview.shortfall > 0 && (
+                      <>
+                        {" "}
+                        + {preview.shortfall} to reach the minimum of {preview.minimum} × {formatGBP(preview.adultRate)}
+                      </>
+                    )}{" "}
+                    = <strong>{formatGBP(preview.total)}</strong> for {eventName}. Updates automatically as guests are added, declined or marked as children.
                   </>
                 )}
               </p>
