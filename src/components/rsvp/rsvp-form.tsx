@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { submitRsvp, type RsvpParty } from "@/app/actions/rsvp";
 import { EventNames } from "@/components/rsvp/event-names";
+import { ExploreSite } from "@/components/rsvp/explore-site";
 import { inviteSummary } from "@/lib/invitation";
 import { daysUntil, formatDeadline } from "@/lib/rsvp-deadline";
 import { STAY_OTHER, STAY_PLACES } from "@/lib/site-content";
@@ -163,16 +164,14 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
         <p className="mt-2 text-muted-foreground">
           {anyYes ? "We can't wait to celebrate with you." : "We'll miss you, and thank you for letting us know."}
         </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          For the schedule, travel, places to stay and our gift list, use the menu at the top of the page.
-        </p>
         {party.deadline && !locked ? (
           <p className="mt-4 text-sm text-muted-foreground">
             You can change your answers until {formatDeadline(party.deadline)}.
           </p>
         ) : null}
+        <ExploreSite className="mt-8 border-t pt-8" />
         {!locked && (
-          <Button variant="outline" className="mt-6 rounded-full" onClick={() => setDone(false)}>
+          <Button variant="outline" className="mt-8 rounded-full" onClick={() => setDone(false)}>
             Change my answers
           </Button>
         )}
@@ -435,6 +434,9 @@ export function RsvpForm({ party, token, preview = false }: { party: RsvpParty; 
           {saving ? "Sending..." : unanswered ? "Please answer every event" : "Send my RSVP"}
         </Button>
       )}
+
+      {/* a guest who has already replied (or whose RSVP has closed) is shown the rest of the website too */}
+      {(locked || party.guest.rsvp_responded_at) && <ExploreSite className="rounded-md border bg-card p-6" />}
     </div>
   );
 }
