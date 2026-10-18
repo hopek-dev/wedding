@@ -37,6 +37,15 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
     rsvpByGuestAndEvent.set(`${rsvp.guest_id}:${rsvp.event_id}`, rsvp.status);
   }
   const guestById = new Map(guests.map((g) => [g.id, g]));
+  // What each guest has said they can't eat. It is stored against each event they answered for, so the same note can
+  // appear several times: show each different note once.
+  const dietaryByGuest = new Map<string, string[]>();
+  for (const r of rsvps) {
+    const note = r.dietary_notes?.trim();
+    if (!note) continue;
+    const list = dietaryByGuest.get(r.guest_id) ?? [];
+    if (!list.some((x) => x.toLowerCase() === note.toLowerCase())) dietaryByGuest.set(r.guest_id, [...list, note]);
+  }
   // Filter by tag (?tag=Hope). A plus-one is shown with their host, so they follow the host's tag.
   const tagOf = (g: (typeof guests)[number]) => (g.plus_one_of ? guestById.get(g.plus_one_of)?.tag : g.tag)?.trim() || "";
   const tagCounts = new Map<string, number>();
@@ -95,6 +104,9 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Contact</TableHead>
+              <TableHead>Staying</TableHead>
+              <TableHead>Dietary requirements</TableHead>
+              <TableHead>Song to dance to</TableHead>
               {events.map((event) => (
                 <TableHead key={event.id}>
                   {event.name}
@@ -113,7 +125,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
               const noteHost = !inviter ? guest.notes?.match(/plus[\s-]*one\s+of\s+(.+)/i)?.[1]?.trim() : undefined;
               return (
                 <TableRow key={guest.id}>
-                  <TableCell data-span="full" className="font-medium">
+                  <TableCell data-span="full" className="max-w-[18rem] font-medium whitespace-normal">
                     <div>{[guest.title, guestFullName(guest)].filter(Boolean).join(" ")}</div>
                     {guest.tag && (
                       <Badge variant="outline" className="mt-1 mr-1 font-normal">
@@ -144,11 +156,18 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
                   <TableCell data-label="Contact" className="text-muted-foreground">
                     <div>{guest.email}</div>
                     <div>{guest.phone}</div>
-                    {guest.song_request && <div className="text-xs">Song: {guest.song_request}</div>}
-                    {stayLabel(guest.accommodation) && <div className="text-xs">Staying: {stayLabel(guest.accommodation)}</div>}
                     {guest.last_emailed_at && (
                       <div className="text-xs">Emailed {formatDate(guest.last_emailed_at)}</div>
                     )}
+                  </TableCell>
+                  <TableCell data-label="Staying" className="text-muted-foreground">
+                    {stayLabel(guest.accommodation) || <span className="opacity-50">&ndash;</span>}
+                  </TableCell>
+                  <TableCell data-label="Dietary requirements" className="max-w-[16rem] whitespace-normal">
+                    {dietaryByGuest.get(guest.id)?.join("; ") ?? <span className="text-muted-foreground opacity-50">&ndash;</span>}
+                  </TableCell>
+                  <TableCell data-label="Song to dance to" className="max-w-[14rem] whitespace-normal">
+                    {guest.song_request?.trim() || <span className="text-muted-foreground opacity-50">&ndash;</span>}
                   </TableCell>
                   {events.map((event) => (
                     <TableCell data-label={event.name} key={event.id}>
@@ -181,7 +200,7 @@ export default async function GuestsPage({ searchParams }: { searchParams: Promi
             })}
             {guests.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3 + events.length} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={6 + events.length} className="py-10 text-center text-muted-foreground">
                   No guests yet. Add your first one above.
                 </TableCell>
               </TableRow>
