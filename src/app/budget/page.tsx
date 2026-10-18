@@ -52,6 +52,16 @@ export default async function BudgetPage() {
     },
     { fixed: 0, variable: 0 }
   );
+  // Per-guest figures: the whole budget, and only the expenses that are priced by the number of guests, each divided by the
+  // guests it is priced for (estimate: everyone invited; actual: the guests who have accepted).
+  const guestItems = items.filter(isPerGuestItem);
+  const guestEstimated = guestItems.reduce((sum, i) => sum + resolvedEstimatedCost(i, guestCounts), 0);
+  const guestActual = guestItems.reduce((sum, i) => sum + resolvedActualCost(i, guestCounts), 0);
+  const perHead = (total: number, heads: number) => (heads > 0 ? formatGBP(total / heads) : "—");
+  const perGuestCards = [
+    { title: "Per guest: whole budget", hint: "every expense", estimated: totalEstimated, actual: totalActual },
+    { title: "Per guest: guest-dependent costs only", hint: `${guestItems.length} expense${guestItems.length === 1 ? "" : "s"} priced per guest`, estimated: guestEstimated, actual: guestActual },
+  ];
   const minimums = items
     .filter(isPerGuestItem)
     .map((item) => ({ item, b: perGuestBreakdown(item, (guestCounts[item.event_id ?? ALL_GUESTS] ?? NO_EVENT_GUESTS).invited) }))
@@ -104,14 +114,10 @@ export default async function BudgetPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
             <div>
               <div className="text-xs text-muted-foreground">Total estimated</div>
               <div className="text-lg font-semibold">{formatGBP(totalEstimated)}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Per invited guest</div>
-              <div className="text-lg font-semibold">{formatGBP(everyone.invited.total > 0 ? totalEstimated / everyone.invited.total : 0)}</div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Fixed costs</div>
@@ -154,6 +160,35 @@ export default async function BudgetPage() {
           </p>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {perGuestCards.map((c) => (
+          <Card key={c.title}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">
+                {c.title}
+                <span className="block text-xs font-normal text-muted-foreground">{c.hint}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground">Estimated</div>
+                <div className="text-xl font-semibold">{perHead(c.estimated, everyone.invited.total)}</div>
+                <div className="text-xs text-muted-foreground">
+                  {formatGBP(c.estimated)} ÷ {everyone.invited.total} invited
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Actual</div>
+                <div className="text-xl font-semibold">{perHead(c.actual, everyone.accepted.total)}</div>
+                <div className="text-xs text-muted-foreground">
+                  {formatGBP(c.actual)} ÷ {everyone.accepted.total} accepted
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {minimums.length > 0 && (
         <div className="flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-300">
