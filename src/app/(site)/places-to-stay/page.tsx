@@ -2,7 +2,7 @@ import { getSitePhotos } from "@/app/actions/photos";
 import { resolvePhoto } from "@/lib/site-photos";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, MapPin, Star } from "lucide-react";
+import { Clock, ExternalLink, MapPin, Star } from "lucide-react";
 import { Container, PageShell, SectionTitle, pill, pillOutline } from "@/components/site/page-shell";
 import { Reveal } from "@/components/site/reveal";
 import { StayMap } from "@/components/site/stay-map";
@@ -14,6 +14,23 @@ export const metadata = { title: "Places to Stay" };
 const serif = { fontFamily: "var(--font-cormorant), Georgia, serif" } as const;
 
 export const revalidate = 120;
+
+// The booking button for a place, or, where there is nothing to book yet, a plain notice saying so.
+function Book({ p, className = "" }: { p: (typeof STAY_PLACES)[number]; className?: string }) {
+  if (p.bookingNotice) {
+    return (
+      <div className={`flex items-start gap-3 rounded-md border border-[#9a7b2f]/40 bg-[#9a7b2f]/8 px-4 py-3 text-[14px] leading-relaxed font-light ${className}`}>
+        <Clock className="mt-0.5 size-4 shrink-0 text-[#9a7b2f]" strokeWidth={1.6} aria-hidden />
+        <p>{p.bookingNotice}</p>
+      </div>
+    );
+  }
+  return (
+    <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${p.onSite ? pill : pillOutline} gap-2 whitespace-nowrap ${className}`}>
+      {p.bookLabel} <ExternalLink className="size-4" strokeWidth={1.6} />
+    </a>
+  );
+}
 
 export default async function StayPage() {
   const rows = await getSitePhotos();
@@ -78,17 +95,9 @@ export default async function StayPage() {
                         {p.miles != null ? `${p.miles} miles from the venue` : "At the venue"}
                       </span>
                     </p>
-                    {photo && (
-                      <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${p.onSite ? pill : pillOutline} mt-5 gap-2 whitespace-nowrap sm:ml-12`}>
-                        {p.bookLabel} <ExternalLink className="size-4" strokeWidth={1.6} />
-                      </a>
-                    )}
+                    {photo && <Book p={p} className="mt-5 sm:ml-12" />}
                   </div>
-                  {!photo && (
-                    <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${p.onSite ? pill : pillOutline} gap-2 whitespace-nowrap sm:w-64`}>
-                    {p.bookLabel} <ExternalLink className="size-4" strokeWidth={1.6} />
-                  </a>
-                  )}
+                  {!photo && <Book p={p} className="sm:w-64" />}
                 </article>
               </Reveal>
             </li>

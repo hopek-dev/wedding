@@ -114,7 +114,7 @@ export const LONDON = {
 
 export const STAY = {
   intro:
-    "The venue has blocked all available accommodation on their premises. There are 25 double bedrooms and cottages available to book for the night of the wedding. If you would rather stay nearby, here are our favourite options around the venue.",
+    "The venue has blocked all available accommodation on their premises: 25 double bedrooms and cottages for the night of the wedding, kept for our guests only. Booking isn’t open yet and will open later. If you would rather stay nearby, here are our favourite options around the venue.",
   // Where guests book the venue's own rooms. Set NEXT_PUBLIC_ACCOMMODATION_URL to the venue's booking page.
   bookingUrl: process.env.NEXT_PUBLIC_ACCOMMODATION_URL?.trim() || "https://www.secure-hotel-booking.com/d-edge/Mulberry-House-Hotel-Conference-Centre/2MKA/en/DateSelection",
 };
@@ -137,6 +137,7 @@ export interface StayPlace {
   url: string;
   bookLabel: string;
   onSite?: boolean;
+  bookingNotice?: string; // when set, there is nothing to book yet: this is shown instead of the booking button
   tag?: string; // a small label shown above the name
 }
 
@@ -152,7 +153,8 @@ export const STAY_PLACES: StayPlace[] = [
     ratingOutOf: 5,
     ratingSource: "Google",
     reviews: 969,
-    blurb: "Rooms in the Georgian house and the courtyard, steps from the ceremony and the dance floor. Mention our wedding when you book.",
+    blurb: "Rooms in the Georgian house and the courtyard, steps from the ceremony and the dance floor. These rooms are kept for our wedding guests only.",
+    bookingNotice: "Booking isn’t open yet. It will open later, for our wedding guests only. We will update you when it is open for booking.",
     url: process.env.NEXT_PUBLIC_ACCOMMODATION_URL?.trim() || "https://www.secure-hotel-booking.com/d-edge/Mulberry-House-Hotel-Conference-Centre/2MKA/en/DateSelection",
     bookLabel: "Book at the venue",
     onSite: true,
